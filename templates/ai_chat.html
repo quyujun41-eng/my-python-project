@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="max-width:900px;margin:30px auto;padding:0 20px;font-family:sans-serif">
+
+  <h2 style="margin-bottom:4px">B站数据 AI 问答</h2>
+  <p style="color:#666;margin-top:0;font-size:14px">
+    演示三个版本：从故障到修复，对应真实项目中会遇到的问题
+  </p>
+
+  <!-- 问题输入区 -->
+  <div style="background:#f8f8f8;border-radius:8px;padding:20px;margin-bottom:20px">
+    <textarea id="question" rows="2" placeholder="例如：游戏区播放量最高的视频是哪个？互动最好的UP主是谁？"
+      style="width:100%;box-sizing:border-box;padding:10px;font-size:15px;border:1px solid #ddd;border-radius:6px;resize:none"></textarea>
+
+    <!-- 预设问题（方便测试） -->
+    <div style="margin:10px 0;font-size:13px;color:#888">
+      快速测试：
+      <span class="preset" style="cursor:pointer;color:#1890ff;margin-right:12px" onclick="setQ(this)">游戏区播放量最高的视频是哪个？</span>
+      <span class="preset" style="cursor:pointer;color:#1890ff;margin-right:12px" onclick="setQ(this)">哪个分区的平均粉丝数最高？</span>
+      <span class="preset" style="cursor:pointer;color:#1890ff" onclick="setQ(this)">互动最好的前5个视频是哪些？</span>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button onclick="ask(1)" style="flex:1;padding:10px;background:#ff4d4f;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">
+        版本1：故障版（无Schema）
+      </button>
+      <button onclick="ask(2)" style="flex:1;padding:10px;background:#fa8c16;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">
+        版本2：半修复版
+      </button>
+      <button onclick="ask(3)" style="flex:1;padding:10px;background:#52c41a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">
+        版本3：生产版（完整修复）
+      </button>
+    </div>
+  </div>
+
+  <!-- 结果展示区 -->
+  <div id="result" style="display:none">
+
+    <!-- AI 自然语言回答 -->
+    <div id="answer-box" style="background:#e6f4ff;border-left:4px solid #1890ff;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:16px;display:none">
+      <div style="font-size:12px;color:#1890ff;margin-bottom:6px">AI 回答</div>
+      <div id="answer-text" style="font-size:15px;line-height:1.7"></div>
+    </div>
+
+    <!-- 故障说明 -->
+    <div id="error-box" style="background:#fff2f0;border-left:4px solid #ff4d4f;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:16px;display:none">
+      <div style="font-size:12px;color:#ff4d4f;margin-bottom:6px">故障信息</div>
+      <div id="error-text" style="font-family:monospace;font-size:13px"></div>
+      <div id="error-explain" style="margin-top:10px;font-size:13px;color:#555"></div>
+    </div>
+
+    <!-- SQL 展示 -->
+    <div style="background:#1e1e1e;border-radius:8px;padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;color:#888;margin-bottom:8px">AI 生成的 SQL</div>
+      <pre id="sql-text" style="margin:0;color:#ce9178;font-size:13px;white-space:pre-wrap"></pre>
+    </div>
+
+    <!-- 数据表格 -->
+    <div id="table-box" style="overflow-x:auto;display:none">
+      <div style="font-size:12px;color:#888;margin-bottom:8px">查询结果 <span id="total-text"></span></div>
+      <table id="data-table" style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead id="table-head" style="background:#fafafa"></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 原理说明 -->
+  <div style="margin-top:40px;border-top:1px solid #eee;padding-top:20px">
+    <h4 style="color:#333">三个版本的差异（对应真实项目故障）</h4>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:#fafafa">
+          <th style="padding:10px;border:1px solid #eee;text-align:left">版本</th>
+          <th style="padding:10px;border:1px solid #eee;text-align:left">问题</th>
+          <th style="padding:10px;border:1px solid #eee;text-align:left">修复方式</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:10px;border:1px solid #eee;color:#ff4d4f">版本1：故障版</td>
+          <td style="padding:10px;border:1px solid #eee">AI 不知道列名是中文，生成 title/views 等英文列名，SQL 报错</td>
+          <td style="padding:10px;border:1px solid #eee;color:#999">无修复</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;border:1px solid #eee;color:#fa8c16">版本2：半修复</td>
+          <td style="padding:10px;border:1px solid #eee">有了 Schema，SQL 基本正确，但输出格式不稳定，有时带解释文字导致解析失败</td>
+          <td style="padding:10px;border:1px solid #eee">提供 Schema 信息</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;border:1px solid #eee;color:#52c41a">版本3：生产版</td>
+          <td style="padding:10px;border:1px solid #eee">全部修复</td>
+          <td style="padding:10px;border:1px solid #eee">
+            ① 强制 JSON 输出格式<br>
+            ② SQL 报错自动反馈 AI 修正<br>
+            ③ 定义业务词汇（最火=播放量最高）<br>
+            ④ 二次调用 AI 解读结果
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function setQ(el) {
+  document.getElementById('question').value = el.textContent.trim();
+}
+
+const ERRORS = {
+  1: '故障原因：没有告诉 AI 数据库结构，AI 猜测用了英文列名（如 title、views），但实际列名是中文（标题、播放量），导致 SQL 执行报错。这是 Text-to-SQL 最基础的坑。',
+  2: 'AI 已能生成正确 SQL，但输出格式不受控：有时加解释文字、有时用不同的代码块格式，解析逻辑可能失效。生产环境中这会随机出现。'
+};
+
+async function ask(version) {
+  const question = document.getElementById('question').value.trim();
+  if (!question) { alert('请输入问题'); return; }
+
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('answer-box').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+  document.getElementById('table-box').style.display = 'none';
+  document.getElementById('sql-text').textContent = '生成中...';
+
+  const versionLabels = {1: '故障版', 2: '半修复版', 3: '生产版'};
+  document.getElementById('sql-text').textContent = `[版本${version}：${versionLabels[version]}] 请求中...`;
+
+  try {
+    const res = await fetch('/ai/ask', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question, version})
+    });
+    const data = await res.json();
+
+    document.getElementById('sql-text').textContent = data.sql || '（未能提取到SQL）';
+
+    if (data.status === 'error') {
+      document.getElementById('error-box').style.display = 'block';
+      document.getElementById('error-text').textContent = 'SQL 执行错误：' + data.error;
+      document.getElementById('error-explain').textContent = ERRORS[version] || '';
+    } else {
+      if (data.answer) {
+        document.getElementById('answer-box').style.display = 'block';
+        document.getElementById('answer-text').textContent = data.answer;
+      }
+      if (data.rows && data.rows.length > 0) {
+        document.getElementById('table-box').style.display = 'block';
+        document.getElementById('total-text').textContent =
+          data.total > data.rows.length ? `（共 ${data.total} 条，显示前 ${data.rows.length} 条）` : `（共 ${data.total} 条）`;
+        const thead = document.getElementById('table-head');
+        const tbody = document.getElementById('table-body');
+        thead.innerHTML = '<tr>' + data.columns.map(c =>
+          `<th style="padding:8px 12px;border:1px solid #eee;text-align:left;white-space:nowrap">${c}</th>`
+        ).join('') + '</tr>';
+        tbody.innerHTML = data.rows.map(row =>
+          '<tr>' + row.map(cell =>
+            `<td style="padding:8px 12px;border:1px solid #eee;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis">${cell ?? ''}</td>`
+          ).join('') + '</tr>'
+        ).join('');
+      }
+    }
+  } catch (e) {
+    document.getElementById('error-box').style.display = 'block';
+    document.getElementById('error-text').textContent = '网络请求失败：' + e.message;
+    document.getElementById('error-explain').textContent = '';
+  }
+}
+</script>
+{% endblock %}
