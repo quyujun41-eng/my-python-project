@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}B站美食分析系统{% endblock %}
+{% block content %}
+				<section class="page-hd">
+					<header>
+						<h2 class="title"><i class="icon-home"></i>算法推荐</h2>
+					</header>
+					<hr>
+				</section>
+
+				<table class="table table-bordered  mb-15 mt-15" id="divtable">
+					<thead>
+						<tr class="cen">
+							  <th>作者</th>
+							  <th>标题</th>
+							  <th>弹幕量</th>
+							  <th>播放量</th>
+							  <th>投稿时间</th>
+							  <th>收藏量</th>
+							<th>点赞</th>
+							<th>分区</th>
+							<th>粉丝数</th>
+						</tr>
+					</thead>
+					<tbody id="group_one">
+                              {% for resu in results %}
+                              <tr>
+                                  <td>{{ resu.author }}</td>
+								  <td><a href="{{ resu.url }}">{{ resu.title }}</a></td>
+                                  <td>{{ resu.video_review }}</td>
+                                  <td>{{ resu.rank_score }}</td>
+                                  <td>{{ resu.pubdate }}</td>
+                                  <td>{{ resu.favorites }}</td>
+								   <td>{{ resu.like }}</td>
+								   <td>{{ resu.tag }}</td>
+								   <td>{{ resu.fans }}</td>
+                              </tr>
+                              {% endfor %}
+					</tbody>
+				</table>
+
+			</div>
+
+
+{% endblock %}

@@ -1,0 +1,619 @@
+{% extends 'base.html' %}
+{% block title %}描述性统计{% endblock %}
+
+{% block content %}
+        <div class="content">
+            
+			<div class="container-fluid">
+					<div class="row">
+							<div class="col-xl-12">
+									<div class="breadcrumb-holder">
+											<h1 class="main-title float-left">视频数据分析可视化   （视频类型分区） </h1>
+
+{#                                        <ol class="breadcrumb float-right">#}
+{#												<li class="breadcrumb-item">Home</li>#}
+{#											</ol>#}
+											<div class="clearfix"></div>
+									</div>
+							</div>
+					</div>
+				<p>
+					{% for resu in types %}
+					&nbsp;&nbsp;&nbsp;<span><a href="/echarts1?type1={{resu}}">{{ resu }}</a></span>
+					{% endfor %}
+				</p>
+
+
+					<div class="row">
+					
+							<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+								<div class="card mb-3">
+									<div class="card-header">
+										<i class="fa fa-table"></i> 播放量前20视频柱状图
+									</div>
+										
+									<div class="card-body" id="app1" style="height:300px;width:100%">
+									</div>
+								</div><!-- end card-->					
+							</div>
+							
+							<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+								<div class="card mb-3">
+									<div class="card-header">
+										<i class="fa fa-table"></i> 粉丝数前10的视频类型折线图
+									</div>
+										
+									<div class="card-body" id="app2" style="height:300px;width:100%">
+									</div>
+								</div><!-- end card-->					
+							</div>
+							<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+								<div class="card mb-3">
+									<div class="card-header">
+										<i class="fa fa-table"></i> 播放量等级与视频时长箱线图
+									</div>
+
+									<div class="card-body" id="app3" style="height:300px;width:100%">
+									</div>
+								</div><!-- end card-->
+							</div>
+						<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+								<div class="card mb-3">
+									<div class="card-header">
+										<i class="fa fa-table"></i> 播放量与粉丝数关系散点图
+									</div>
+
+									<div class="card-body" id="app4" style="height:300px;width:100%">
+                                        <script type="text/javascript">
+
+                var dom1 = document.getElementById("app4");
+                var myChart1 = echarts.init(dom1);
+
+                var option1 =  {
+                      xAxis: {axisLabel: {
+                                show: true,
+                                textStyle: {
+                                    color: '#ffffff'
+                                }
+                             }},
+                      yAxis: {axisLabel: {
+                                show: true,
+                                textStyle: {
+                                    color: '#ffffff'
+                                }
+                             }},
+                         grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '15%',
+                    top: '5%',
+                    containLabel: true
+                   },
+                       tooltip: {
+                                    /*返回需要的信息*/
+                                    formatter: function(param) {
+                                        var value = param.value;
+                                        return '<div style="border-bottom: 1px solid rgba(255,255,255,.3); font-size: 16px;padding-bottom: 7px;margin-bottom: 7px;"> '+ '(播放量'+ value[0] +  ' 粉丝数:' + value[1] + ' 标题:' + value[2] + ')' +
+                                            '</div>';
+                                    }
+                                },
+                  series: [
+                    {
+                      symbolSize: 10,
+                      data: {{score_time | safe}},
+                      type: 'scatter'
+                    }
+                  ]
+                };
+
+                if (option1 && typeof option1 === 'object') {
+                    myChart1.setOption(option1);
+                }
+
+                </script>
+									</div>
+								</div><!-- end card-->
+							</div>
+
+					</div>
+					
+
+
+
+
+            </div>
+			<!-- END container-fluid -->
+
+		</div>
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+<script>
+var dom = document.getElementById("app1");
+var myChart = echarts.init(dom);
+var option = {
+    title: {
+        text: '',
+    },
+    tooltip: {
+        trigger: 'axis',
+        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+            type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+        }
+    },
+    grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+    },
+    xAxis: [
+        {
+            type: 'category',
+            data: {{rank_score_name | safe}},
+            axisTick: {
+                alignWithLabel: true
+            }
+        }
+    ],
+    yAxis: [
+        {
+            type: 'value'
+        }
+    ],
+    series: [
+        {
+            name: '数',
+            type: 'bar',
+            barWidth: '60%',
+            data: {{rank_score_count | safe}}
+        }
+    ]
+};
+
+if (option && typeof option === 'object') {
+    myChart.setOption(option);
+}
+</script>
+
+<script>
+var dom = document.getElementById("app2");
+var myChart = echarts.init(dom);
+var option = {
+    title: {
+        text: '',
+    },
+    tooltip: {
+        trigger: 'axis',
+        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
+            type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+        }
+    },
+    grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+    },
+    xAxis: [
+        {
+            type: 'category',
+            data: {{author_name | safe}},
+            axisTick: {
+                alignWithLabel: true
+            }
+        }
+    ],
+    yAxis: [
+        {
+            type: 'value'
+        }
+    ],
+    series: [
+        {
+            name: '数',
+            type: 'line',
+            barWidth: '60%',
+            data: {{author_count | safe}}
+        }
+    ]
+};
+
+if (option && typeof option === 'object') {
+    myChart.setOption(option);
+}
+</script>
+
+<script>
+var dom = document.getElementById("app3");
+var myChart = echarts.init(dom);
+var option = option = {
+  title: [
+    {
+      text: '',
+    },
+    {
+      text: '',
+      borderColor: '#999',
+      textStyle: {
+        fontWeight: 'normal',
+        fontSize: 14,
+        lineHeight: 20
+      },
+      left: '10%',
+      top: '90%'
+    }
+  ],
+  dataset: [
+    {
+      // prettier-ignore
+      source: {{li1 | safe}},
+    },
+    {
+      transform: {
+        type: 'boxplot',
+        config: { itemNameFormatter: '播放等级 {value}' }
+      }
+    },
+    {
+      fromDatasetIndex: 1,
+      fromTransformResult: 1
+    }
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'shadow'
+    }
+  },
+  grid: {
+    left: '10%',
+    right: '10%',
+    bottom: '15%'
+  },
+  xAxis: {
+    type: 'category',
+    boundaryGap: true,
+    nameGap: 30,
+    splitArea: {
+      show: false
+    },
+    splitLine: {
+      show: false
+    }
+  },
+  yAxis: {
+    type: 'value',
+    splitArea: {
+      show: true
+    }
+  },
+  series: [
+    {
+      name: '数',
+      type: 'boxplot',
+      datasetIndex: 1
+    }
+  ]
+};
+
+if (option && typeof option === 'object') {
+    myChart.setOption(option);
+}
+</script>
+
+<script>
+var dom = document.getElementById("app4");
+var myChart = echarts.init(dom);
+var option = option = {
+  title: [
+    {
+      text: '',
+    },
+    {
+      text: '',
+      borderColor: '#999',
+      textStyle: {
+        fontWeight: 'normal',
+        fontSize: 14,
+        lineHeight: 20
+      },
+      left: '10%',
+      top: '90%'
+    }
+  ],
+  dataset: [
+    {
+      // prettier-ignore
+      source: {{li2 | safe}},
+    },
+    {
+      transform: {
+        type: 'boxplot',
+        config: { itemNameFormatter: '播放等级 {value}' }
+      }
+    },
+    {
+      fromDatasetIndex: 1,
+      fromTransformResult: 1
+    }
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'shadow'
+    }
+  },
+  grid: {
+    left: '10%',
+    right: '10%',
+    bottom: '15%'
+  },
+  xAxis: {
+    type: 'category',
+    boundaryGap: true,
+    nameGap: 30,
+    splitArea: {
+      show: false
+    },
+    splitLine: {
+      show: false
+    }
+  },
+  yAxis: {
+    type: 'value',
+    splitArea: {
+      show: true
+    }
+  },
+  series: [
+    {
+      name: '数',
+      type: 'boxplot',
+      datasetIndex: 1
+    }
+  ]
+};
+
+if (option && typeof option === 'object') {
+    myChart.setOption(option);
+}
+</script>
+
+<script>
+var dom = document.getElementById("app5");
+var myChart = echarts.init(dom);
+var option = option = {
+  title: [
+    {
+      text: '',
+    },
+    {
+      text: '',
+      borderColor: '#999',
+      textStyle: {
+        fontWeight: 'normal',
+        fontSize: 14,
+        lineHeight: 20
+      },
+      left: '10%',
+      top: '90%'
+    }
+  ],
+  dataset: [
+    {
+      // prettier-ignore
+      source: {{li3 | safe}},
+    },
+    {
+      transform: {
+        type: 'boxplot',
+        config: { itemNameFormatter: '播放等级 {value}' }
+      }
+    },
+    {
+      fromDatasetIndex: 1,
+      fromTransformResult: 1
+    }
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'shadow'
+    }
+  },
+  grid: {
+    left: '10%',
+    right: '10%',
+    bottom: '15%'
+  },
+  xAxis: {
+    type: 'category',
+    boundaryGap: true,
+    nameGap: 30,
+    splitArea: {
+      show: false
+    },
+    splitLine: {
+      show: false
+    }
+  },
+  yAxis: {
+    type: 'value',
+    splitArea: {
+      show: true
+    }
+  },
+  series: [
+    {
+      name: '数',
+      type: 'boxplot',
+      datasetIndex: 1
+    }
+  ]
+};
+
+if (option && typeof option === 'object') {
+    myChart.setOption(option);
+}
+</script>
+
+<script>
+var dom = document.getElementById("app6");
+var myChart = echarts.init(dom);
+var option = option = {
+  title: [
+    {
+      text: '',
+    },
+    {
+      text: '',
+      borderColor: '#999',
+      textStyle: {
+        fontWeight: 'normal',
+        fontSize: 14,
+        lineHeight: 20
+      },
+      left: '10%',
+      top: '90%'
+    }
+  ],
+  dataset: [
+    {
+      // prettier-ignore
+      source: {{li4 | safe}},
+    },
+    {
+      transform: {
+        type: 'boxplot',
+        config: { itemNameFormatter: '播放等级 {value}' }
+      }
+    },
+    {
+      fromDatasetIndex: 1,
+      fromTransformResult: 1
+    }
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'shadow'
+    }
+  },
+  grid: {
+    left: '10%',
+    right: '10%',
+    bottom: '15%'
+  },
+  xAxis: {
+    type: 'category',
+    boundaryGap: true,
+    nameGap: 30,
+    splitArea: {
+      show: false
+    },
+    splitLine: {
+      show: false
+    }
+  },
+  yAxis: {
+    type: 'value',
+    splitArea: {
+      show: true
+    }
+  },
+  series: [
+    {
+      name: '数',
+      type: 'boxplot',
+      datasetIndex: 1
+    }
+  ]
+};
+
+if (option && typeof option === 'object') {
+    myChart.setOption(option);
+}
+</script>
+
+<script>
+var dom = document.getElementById("app7");
+var myChart = echarts.init(dom);
+var option = option = {
+  title: [
+    {
+      text: '',
+    },
+    {
+      text: '',
+      borderColor: '#999',
+      textStyle: {
+        fontWeight: 'normal',
+        fontSize: 14,
+        lineHeight: 20
+      },
+      left: '10%',
+      top: '90%'
+    }
+  ],
+  dataset: [
+    {
+      // prettier-ignore
+      source: {{li5 | safe}},
+    },
+    {
+      transform: {
+        type: 'boxplot',
+        config: { itemNameFormatter: '播放等级 {value}' }
+      }
+    },
+    {
+      fromDatasetIndex: 1,
+      fromTransformResult: 1
+    }
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'shadow'
+    }
+  },
+  grid: {
+    left: '10%',
+    right: '10%',
+    bottom: '15%'
+  },
+  xAxis: {
+    type: 'category',
+    boundaryGap: true,
+    nameGap: 30,
+    splitArea: {
+      show: false
+    },
+    splitLine: {
+      show: false
+    }
+  },
+  yAxis: {
+    type: 'value',
+    splitArea: {
+      show: true
+    }
+  },
+  series: [
+    {
+      name: '数',
+      type: 'boxplot',
+      datasetIndex: 1
+    }
+  ]
+};
+
+if (option && typeof option === 'object') {
+    myChart.setOption(option);
+}
+</script>
+
+{% endblock %}
