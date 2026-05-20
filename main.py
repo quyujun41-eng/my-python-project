@@ -194,41 +194,6 @@ def signup():
             return redirect(url_for('login'))
 
 
-import ai_chat
-
-@app.route('/ai', methods=['GET'])
-def ai_page():
-    uuid = session.get('uuid')
-    if not models.User.query.get(uuid):
-        return redirect(url_for('login'))
-    return render_template('ai_chat.html')
-
-@app.route('/ai/ask', methods=['POST'])
-def ai_ask():
-    """
-    接收前端问题，调用三个版本的引擎
-    version=1 → 故障版（无Schema）
-    version=2 → 半修复版（有Schema但格式不稳定）
-    version=3 → 生产版（完整修复）
-    """
-    uuid = session.get('uuid')
-    if not models.User.query.get(uuid):
-        return jsonify({"error": "未登录"}), 401
-
-    question = request.json.get('question', '').strip()
-    version = request.json.get('version', 3)
-
-    if not question:
-        return jsonify({"error": "问题不能为空"}), 400
-
-    if version == 1:
-        result = ai_chat.ask_v1_broken(question)
-    elif version == 2:
-        result = ai_chat.ask_v2_unstable(question)
-    else:
-        result = ai_chat.ask_v3_production(question)
-
-    return jsonify(result)
 
 
 @app.route('/dianzan', methods=['GET', 'POST'])
