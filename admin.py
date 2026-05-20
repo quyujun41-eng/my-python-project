@@ -2,7 +2,7 @@ from flask_admin import Admin,AdminIndexView
 from main import app
 from flask_admin.contrib.sqla import ModelView
 from flask import current_app,redirect,url_for,request
-from models import db,User,HuiZong,Recommend
+from models import db, User, HuiZong, Recommend, UserBehavior, SearchHistory, Comment
 
 class MyModelView(ModelView):
     def inaccessible_callback(self, name, **kwargs):
@@ -44,6 +44,34 @@ class MyRecommend(MyModelView):
         num = '分数'
     )
 
+class MyUserBehavior(MyModelView):
+    column_labels = dict(
+        user_id='用户',
+        huizong_id='视频',
+        behavior_type='行为类型',
+        behavior_time='行为时间'
+    )
+    column_list = ('user_id', 'huizong_id', 'behavior_type', 'behavior_time')
+
+class MySearchHistory(MyModelView):
+    column_labels = dict(
+        user_id='用户',
+        keyword='搜索关键词',
+        result_count='结果数量',
+        search_time='搜索时间'
+    )
+    column_list = ('user_id', 'keyword', 'result_count', 'search_time')
+    column_searchable_list = ('keyword',)
+
+class MyComment(MyModelView):
+    column_labels = dict(
+        user_id='用户',
+        huizong_id='视频',
+        content='评论内容',
+        create_time='评论时间'
+    )
+    column_list = ('user_id', 'huizong_id', 'content', 'create_time')
+
 
 admin = Admin(app=app, name='后台管理系统',template_mode='bootstrap3', base_template='admin/mybase.html',index_view=AdminIndexView(
         name='导航栏',
@@ -51,9 +79,12 @@ admin = Admin(app=app, name='后台管理系统',template_mode='bootstrap3', bas
         url='/admin'
     ))
 
-admin.add_view(MyHuiZong(HuiZong, db.session,name='数据管理'))
-admin.add_view(MyRecommend(Recommend, db.session,name='用户行为数据管理'))
-admin.add_view(MyUser(User, db.session,name='用户管理'))
+admin.add_view(MyHuiZong(HuiZong, db.session, name='视频数据管理'))
+admin.add_view(MyRecommend(Recommend, db.session, name='推荐记录管理'))
+admin.add_view(MyUserBehavior(UserBehavior, db.session, name='用户行为管理'))
+admin.add_view(MySearchHistory(SearchHistory, db.session, name='搜索历史管理'))
+admin.add_view(MyComment(Comment, db.session, name='评论管理'))
+admin.add_view(MyUser(User, db.session, name='用户管理'))
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)

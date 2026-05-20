@@ -7,6 +7,7 @@ from models import app
 import time
 from sqlalchemy import or_,and_
 import json
+from models import SearchHistory, UserBehavior, Comment
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -19,9 +20,21 @@ def index():
         results = models.HuiZong.query.all()
         search = request.args.get('search')
         if search:
-            results = models.HuiZong.query.filter(or_(models.HuiZong.title.like("%{}%".format(search)),models.HuiZong.description.like("%{}%".format(search)),models.HuiZong.author.like("%{}%".format(search))))
+            results = models.HuiZong.query.filter(or_(
+                models.HuiZong.title.like("%{}%".format(search)),
+                models.HuiZong.description.like("%{}%".format(search)),
+                models.HuiZong.author.like("%{}%".format(search)),
+                models.HuiZong.tag.like("%{}%".format(search))
+            )).all()
+            # 记录搜索历史
+            models.db.session.add(models.SearchHistory(
+                user_id=uuid,
+                keyword=search,
+                result_count=len(results)
+            ))
+            models.db.session.commit()
 
-        return render_template('index.html',results=results)
+        return render_template('index.html', results=results)
 
 import xietong
 from sqlalchemy import desc
@@ -217,15 +230,28 @@ def dianzan():
         huizong_id = request.args.get('tid')
         if not models.Recommend.query.filter(and_(models.Recommend.user_id==uuid,models.Recommend.huizong_id==huizong_id)).all():
             models.db.session.add(
-                models.Recommend(
-                    user_id=uuid,
-                    huizong_id=huizong_id,
-                    num=4
-                )
+                models.Recommend(user_id=uuid, huizong_id=huizong_id, num=4)
+            )
+            models.db.session.add(
+                UserBehavior(user_id=uuid, huizong_id=huizong_id, behavior_type='like')
             )
             models.db.session.commit()
             json_item = {"status":True,"content":"点赞成功"}
         else:
             json_item = {"status": True, "content": "已经点个赞了"}
         return jsonify(json.dumps(json_item))
+
+
+@app.route('/comment', methods=['POST'])
+def comment():
+    uuid = session.get('uuid')
+    if not models.User.query.get(uuid):
+        return jsonify({"error": "未登录"}), 401
+    huizong_id = request.json.get('huizong_id')
+    content = request.json.get('content', '').strip()
+    if not content:
+        return jsonify({"error": "评论内容不能为空"}), 400
+    models.db.session.add(Comment(user_id=uuid, huizong_id=huizong_id, content=content))
+    models.db.session.commit()
+    return jsonify({"status": True, "content": "评论成功"})
 

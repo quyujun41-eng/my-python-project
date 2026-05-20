@@ -83,13 +83,61 @@ class HuiZong(db.Model):
 class Recommend(db.Model):
     __tablename__ = 'Recommend'
 
-
-    id = db.Column(db.Integer, unique=True, primary_key=True)
+    id = db.Column(db.Integer, unique=True, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('User.id'))
     huizong_id = db.Column(db.Integer, db.ForeignKey('HuiZong.id'))
     num = db.Column(db.Float, name='分数')
     datetime = db.Column(db.DateTime(), nullable=True, default=datetime.datetime.now)
 
+
+class UserBehavior(db.Model):
+    """用户行为记录表：记录浏览、点赞、收藏等行为，为推荐算法提供多维度输入"""
+    __tablename__ = 'UserBehavior'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False)
+    huizong_id = db.Column(db.Integer, db.ForeignKey('HuiZong.id'), nullable=False)
+    behavior_type = db.Column(db.String(16), name='行为类型', nullable=False)  # view / like / collect
+    behavior_time = db.Column(db.DateTime, default=datetime.datetime.now, name='行为时间')
+
+    user = db.relationship('User', backref='behaviors')
+    huizong = db.relationship('HuiZong', backref='behaviors')
+
+    def __repr__(self):
+        return "<用户{} {}了视频{}>".format(self.user_id, self.behavior_type, self.huizong_id)
+
+
+class SearchHistory(db.Model):
+    """搜索历史表：记录用户搜索关键词，支持关键字数据统计分析"""
+    __tablename__ = 'SearchHistory'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False)
+    keyword = db.Column(db.String(128), name='搜索关键词', nullable=False)
+    result_count = db.Column(db.Integer, name='结果数量', default=0)
+    search_time = db.Column(db.DateTime, default=datetime.datetime.now, name='搜索时间')
+
+    user = db.relationship('User', backref='search_histories')
+
+    def __repr__(self):
+        return "<用户{}搜索了:{}>".format(self.user_id, self.keyword)
+
+
+class Comment(db.Model):
+    """评论表：用户对视频发表评论，增加社交互动功能"""
+    __tablename__ = 'Comment'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False)
+    huizong_id = db.Column(db.Integer, db.ForeignKey('HuiZong.id'), nullable=False)
+    content = db.Column(db.String(500), name='评论内容', nullable=False)
+    create_time = db.Column(db.DateTime, default=datetime.datetime.now, name='评论时间')
+
+    user = db.relationship('User', backref='comments')
+    huizong = db.relationship('HuiZong', backref='comments')
+
+    def __repr__(self):
+        return "<用户{}评论了视频{}>".format(self.user_id, self.huizong_id)
 
 
 if __name__ == '__main__':
