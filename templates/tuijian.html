@@ -8,6 +8,18 @@
 					<hr>
 				</section>
 
+				<div style="margin-bottom:16px;padding:14px 20px;background:#fff7f0;
+				            border-left:4px solid #e85d5d;border-radius:4px;">
+					<span style="color:#333;font-size:15px;">
+						👤 <strong>{{ username }}</strong>，
+						{% if like_count > 0 %}
+							基于你的 <strong style="color:#e85d5d;">{{ like_count }}</strong> 次点赞行为，为你推荐以下视频：
+						{% else %}
+							你还没有点赞记录，以下为系统热门视频推荐：
+						{% endif %}
+					</span>
+				</div>
+
 				<table class="table table-bordered  mb-15 mt-15" id="divtable">
 					<thead>
 						<tr class="cen">

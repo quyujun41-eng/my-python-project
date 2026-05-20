@@ -34,7 +34,10 @@ def index():
             ))
             models.db.session.commit()
 
-        return render_template('index.html', results=results)
+        # 取当前用户最近5条搜索历史
+        search_history = SearchHistory.query.filter_by(user_id=uuid)\
+            .order_by(SearchHistory.search_time.desc()).limit(5).all()
+        return render_template('index.html', results=results, search_history=search_history)
 
 import xietong
 from sqlalchemy import desc
@@ -62,7 +65,8 @@ def tuijian():
             for rid in r:
                 results.append(models.HuiZong.query.get(rid[0]))
 
-        return render_template('tuijian.html',results = results,username=username)
+        like_count = UserBehavior.query.filter_by(user_id=uuid, behavior_type='like').count()
+        return render_template('tuijian.html', results=results, username=username, like_count=like_count)
 
 
 
@@ -124,6 +128,15 @@ def echarts1():
                 li1[3].append(resu.rank_score)
             elif resu.rank_score > 2000000 :
                 li1[4].append(resu.rank_score)
+
+        # 热门搜索关键词 top10
+        from sqlalchemy import func
+        hot_kw = models.db.session.query(
+            SearchHistory.keyword,
+            func.count(SearchHistory.keyword).label('cnt')
+        ).group_by(SearchHistory.keyword).order_by(func.count(SearchHistory.keyword).desc()).limit(10).all()
+        hot_kw_names = [r.keyword for r in hot_kw]
+        hot_kw_counts = [r.cnt for r in hot_kw]
 
         return render_template('charts1.html', **locals())
 

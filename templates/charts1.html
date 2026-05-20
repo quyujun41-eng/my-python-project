@@ -115,11 +115,16 @@
 								</div><!-- end card-->
 							</div>
 
+					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+						<div class="card mb-3">
+							<div class="card-header">
+								<i class="fa fa-search"></i> 用户热门搜索关键词 Top10
+							</div>
+							<div class="card-body" id="app_search" style="height:300px;width:100%"></div>
+						</div>
 					</div>
-					
 
-
-
+					</div>
 
             </div>
 			<!-- END container-fluid -->
@@ -129,6 +134,30 @@
 
 {% block script %}
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+<script>
+var dom = document.getElementById("app_search");
+var myChart = echarts.init(dom);
+var option = {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: [{
+        type: 'category',
+        data: {{ hot_kw_names | safe }},
+        axisTick: { alignWithLabel: true },
+        axisLabel: { rotate: 30 }
+    }],
+    yAxis: [{ type: 'value', name: '搜索次数' }],
+    series: [{
+        name: '搜索次数',
+        type: 'bar',
+        barWidth: '50%',
+        data: {{ hot_kw_counts | safe }},
+        itemStyle: { color: '#e85d5d' }
+    }]
+};
+if (option && typeof option === 'object') { myChart.setOption(option); }
+</script>
 
 <script>
 var dom = document.getElementById("app1");
