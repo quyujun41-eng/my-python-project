@@ -72,8 +72,21 @@
         <span id="crawl-msg" style="color:#4a90e2;font-size:14px;"></span>
     </div>
     <p style="color:#aaa;font-size:12px;margin-top:10px;margin-bottom:0;">
-        覆盖B站38个主要分区，每分区最多20页（约400条），按所选年份过滤发布时间，预计耗时20~30分钟。每天凌晨3点自动爬取最新年份数据。
+        覆盖B站38个主要分区，每分区最多20页（约400条），按所选年份过滤发布时间，预计耗时20~30分钟。每天凌晨3:30自动爬取。
     </p>
+</div>
+
+<!-- 定时任务开关 -->
+<div style="background:#fff;border-radius:8px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin:12px 0;display:flex;align-items:center;gap:16px;">
+    <span style="font-size:14px;color:#555;font-weight:bold;">定时自动爬取</span>
+    <span id="scheduler-status" style="font-size:13px;font-weight:bold;color:{{ '#7ed321' if scheduler_on else '#aaa' }};">
+        {{ '已开启（每天 03:30）' if scheduler_on else '已暂停' }}
+    </span>
+    <button id="btn-scheduler" onclick="toggleScheduler()"
+            style="padding:6px 20px;border-radius:4px;border:none;font-size:13px;font-weight:bold;cursor:pointer;
+                   background:{{ '#e85d5d' if scheduler_on else '#7ed321' }};color:#fff;">
+        {{ '暂停' if scheduler_on else '开启' }}
+    </button>
 </div>
 
 <!-- 删除数据区 -->
@@ -258,6 +271,21 @@ chart.setOption({
 </script>
 {% endif %}
 <script>
+function toggleScheduler() {
+    fetch('/crawl/scheduler/toggle', { method: 'POST' })
+        .then(r => r.json())
+        .then(function(data) {
+            layer.msg(data.message || data.error, { time: 1500, icon: data.status === 'ok' ? 1 : 2 });
+            if (data.status === 'ok') {
+                var on = data.running;
+                document.getElementById('scheduler-status').innerText = on ? '已开启（每天 03:30）' : '已暂停';
+                document.getElementById('scheduler-status').style.color = on ? '#7ed321' : '#aaa';
+                document.getElementById('btn-scheduler').innerText = on ? '暂停' : '开启';
+                document.getElementById('btn-scheduler').style.background = on ? '#e85d5d' : '#7ed321';
+            }
+        });
+}
+
 var selectedCrawlYear = {{ current_year }};
 var selectedDelYear = null;
 

@@ -385,6 +385,10 @@ def crawl():
     last_log = CrawlLog.query.order_by(CrawlLog.start_time.desc()).first()
     logs = CrawlLog.query.order_by(CrawlLog.start_time.desc()).limit(10).all()
 
+    from run import scheduler
+    job = scheduler.get_job('daily_crawl')
+    scheduler_on = job is not None and job.next_run_time is not None
+
     # 年份对比：用户可选两个年份，查询均限定 1月~当前月
     avail_years = [int(y['year']) for y in year_stats]
     cmp_a = request.args.get('cmp_a', type=int)
@@ -468,6 +472,7 @@ def crawl():
         current_month=current_month,
         crawl_year_options=crawl_year_options,
         compare=compare,
+        scheduler_on=scheduler_on,
     )
 
 
@@ -538,6 +543,24 @@ def crawl_stop():
         return jsonify({'error': '请先登录'}), 403
     _crawl_stop_event.set()
     return jsonify({'status': 'ok', 'message': '已发送停止信号，爬虫将在当前页完成后停止（约1~2秒）'})
+
+
+@app.route('/crawl/scheduler/toggle', methods=['POST'])
+def scheduler_toggle():
+    uuid = session.get('uuid')
+    user = models.User.query.get(uuid)
+    if not user or not (user.name == 'admin' or user.id == 1):
+        return jsonify({'error': '无权限'}), 403
+    from run import scheduler
+    job = scheduler.get_job('daily_crawl')
+    if job is None:
+        return jsonify({'error': '定时任务不存在'}), 404
+    if job.next_run_time is None:
+        scheduler.resume_job('daily_crawl')
+        return jsonify({'status': 'ok', 'running': True, 'message': '定时爬取已开启'})
+    else:
+        scheduler.pause_job('daily_crawl')
+        return jsonify({'status': 'ok', 'running': False, 'message': '定时爬取已暂停'})
 
 
 @app.route('/crawl/rollback/<int:log_id>', methods=['POST'])
