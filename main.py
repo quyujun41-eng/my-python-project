@@ -17,6 +17,13 @@ from sqlalchemy import desc
 _crawl_stop_event = threading.Event()
 
 
+@app.context_processor
+def inject_current_user():
+    uuid = session.get('uuid')
+    user = models.User.query.get(uuid) if uuid else None
+    return {'current_username': user.name if user else None}
+
+
 def _get_year_stats():
     """返回各年份数据量列表，按 data_year 字段分组。"""
     rows = models.db.session.query(

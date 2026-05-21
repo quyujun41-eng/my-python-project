@@ -67,6 +67,11 @@
 			</div>
 			<div class="hd-rt">
 				<ul>
+					{% if current_username %}
+					<li>
+						<span style="color:#555;font-size:13px;margin-right:12px;"><i class="icon-user"></i> {{ current_username }}</span>
+					</li>
+					{% endif %}
 					<li>
 						<a href="/loginout" id="JsSignOut"><i class="icon-signout"></i>安全退出</a>
 					</li>
