@@ -147,10 +147,11 @@ def migrate_db(app):
                 pass
 
 
-def run_crawl(app, stop_event=None, target_year=None):
+def run_crawl(app, stop_event=None, target_year=None, max_records=None):
     """Main crawl entry point.
     stop_event: threading.Event to signal early stop.
     target_year: int, if set, only fetch videos published in that year.
+    max_records: int, if set, stop after adding this many new records.
     """
     with app.app_context():
         from models import db, HuiZong, CrawlLog
@@ -178,9 +179,14 @@ def run_crawl(app, stop_event=None, target_year=None):
                 if stop_event and stop_event.is_set():
                     app.logger.info('[crawler] 收到停止信号，提前终止')
                     break
+                if max_records and total_new >= max_records:
+                    app.logger.info(f'[crawler] 已达到新增上限 {max_records} 条，停止')
+                    break
                 app.logger.info(f'[crawler] 关键词: {keyword} 年份: {data_year}')
                 for page in range(1, Config.CRAWL_MAX_PAGES + 1):
                     if stop_event and stop_event.is_set():
+                        break
+                    if max_records and total_new >= max_records:
                         break
                     try:
                         result = _search_page(sess, keyword, page, img_key, sub_key,

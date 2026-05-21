@@ -14,7 +14,13 @@ import main    # noqa: F401  注册所有路由
 import admin   # noqa: F401  注册后台管理视图
 from crawler import run_crawl, migrate_db
 
-CRAWL_YEARS = [2023, 2024, 2025]
+# 各年份每次爬取新增上限
+CRAWL_PLAN = [
+    {'target_year': 2023, 'max_records': 5000},
+    {'target_year': 2024, 'max_records': 5000},
+    {'target_year': 2025, 'max_records': 5000},
+    {'target_year': 2026, 'max_records': 3000},
+]
 
 
 def _cleanup_stale_crawls():
@@ -31,10 +37,15 @@ def _cleanup_stale_crawls():
 
 
 def _run_all_years():
-    """同时爬取多个年份，每个年份一个线程"""
+    """同时爬取多个年份，每个年份一个线程，各自有新增上限"""
     threads = [
-        threading.Thread(target=run_crawl, args=(app,), kwargs={'target_year': y}, daemon=True)
-        for y in CRAWL_YEARS
+        threading.Thread(
+            target=run_crawl,
+            args=(app,),
+            kwargs={'target_year': plan['target_year'], 'max_records': plan['max_records']},
+            daemon=True
+        )
+        for plan in CRAWL_PLAN
     ]
     for t in threads:
         t.start()
@@ -50,7 +61,7 @@ scheduler.add_job(
     func=_run_all_years,
     trigger='cron',
     hour=Config.AUTO_CRAWL_HOUR,
-    minute=5,
+    minute=30,
     id='daily_crawl',
 )
 scheduler.start()
