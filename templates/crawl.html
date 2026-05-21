@@ -86,7 +86,7 @@
 <div style="background:#fff;border-radius:8px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin:12px 0;display:flex;align-items:center;gap:16px;">
     <span style="font-size:14px;color:#555;font-weight:bold;">定时自动爬取</span>
     <span id="scheduler-status" style="font-size:13px;font-weight:bold;color:{{ '#7ed321' if scheduler_on else '#aaa' }};">
-        {{ '已开启（每天 03:30）' if scheduler_on else '已暂停' }}
+        {{ '已开启（每天 03:55）' if scheduler_on else '已暂停' }}
     </span>
     <button id="btn-scheduler" onclick="toggleScheduler()"
             style="padding:6px 20px;border-radius:4px;border:none;font-size:13px;font-weight:bold;cursor:pointer;
@@ -284,7 +284,7 @@ function toggleScheduler() {
             layer.msg(data.message || data.error, { time: 1500, icon: data.status === 'ok' ? 1 : 2 });
             if (data.status === 'ok') {
                 var on = data.running;
-                document.getElementById('scheduler-status').innerText = on ? '已开启（每天 03:30）' : '已暂停';
+                document.getElementById('scheduler-status').innerText = on ? '已开启（每天 03:55）' : '已暂停';
                 document.getElementById('scheduler-status').style.color = on ? '#7ed321' : '#aaa';
                 document.getElementById('btn-scheduler').innerText = on ? '暂停' : '开启';
                 document.getElementById('btn-scheduler').style.background = on ? '#e85d5d' : '#7ed321';

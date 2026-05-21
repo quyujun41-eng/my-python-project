@@ -68,7 +68,7 @@ scheduler.add_job(
     func=_run_all_years,
     trigger='cron',
     hour=Config.AUTO_CRAWL_HOUR,
-    minute=30,
+    minute=55,
     id='daily_crawl',
 )
 scheduler.start()
