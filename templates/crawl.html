@@ -10,17 +10,18 @@
 </section>
 
 <!-- 数据量统计卡片 -->
-<div style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap;">
+<div id="stat-cards" style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap;">
     {% for yr in year_stats %}
     <div style="flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px;
-                box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;">
-        <div style="font-size:26px;font-weight:bold;color:{{ '#4a90e2' if yr.is_latest else '#888' }};">{{ yr.count }}</div>
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;"
+         data-year="{{ yr.year }}">
+        <div class="year-count" style="font-size:26px;font-weight:bold;color:{{ '#4a90e2' if yr.is_latest else '#888' }};">{{ yr.count }}</div>
         <div style="color:#aaa;margin-top:6px;font-size:13px;">{{ yr.year }}年{{ '最新' if yr.is_latest else '历史' }}数据</div>
     </div>
     {% endfor %}
     <div style="flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px;
                 box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;">
-        <div style="font-size:26px;font-weight:bold;color:#e85d5d;">{{ total }}</div>
+        <div id="total-count" style="font-size:26px;font-weight:bold;color:#e85d5d;">{{ total }}</div>
         <div style="color:#aaa;margin-top:6px;font-size:13px;">数据总量</div>
     </div>
     <div style="flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px;
@@ -310,6 +311,53 @@ function rollback(logId, el) {
         });
 }
 
+// ── 实时轮询：爬取中每3秒刷新数据量 ──────────────────────────
+var _pollTimer = null;
+
+function startPolling() {
+    if (_pollTimer) return;
+    _pollTimer = setInterval(function() {
+        fetch('/crawl/status')
+            .then(r => r.json())
+            .then(function(data) {
+                // 更新总量
+                var totalEl = document.getElementById('total-count');
+                if (totalEl) totalEl.innerText = data.total;
+
+                // 更新各年份卡片
+                var cards = document.querySelectorAll('#stat-cards [data-year]');
+                var yearMap = {};
+                (data.year_stats || []).forEach(function(ys) { yearMap[ys.year] = ys.count; });
+                cards.forEach(function(card) {
+                    var yr = card.getAttribute('data-year');
+                    if (yr && yearMap[yr] !== undefined) {
+                        card.querySelector('.year-count').innerText = yearMap[yr];
+                    }
+                });
+
+                // 爬取进度提示
+                var msg = document.getElementById('crawl-msg');
+                if (data.is_running && msg) {
+                    msg.innerText = '爬虫运行中 — 已新增 ' + data.crawl_new + ' 条，更新 ' + data.crawl_update + ' 条';
+                }
+
+                // 爬取结束时停止轮询并恢复按钮
+                if (!data.is_running) {
+                    stopPolling();
+                    var btn = document.getElementById('btn-crawl');
+                    var btnStop = document.getElementById('btn-stop');
+                    if (btn) { btn.disabled = false; btn.innerText = '▶ 开始爬取'; }
+                    if (btnStop) btnStop.style.display = 'none';
+                    if (msg) msg.innerText = '爬取已完成';
+                }
+            });
+    }, 3000);
+}
+
+function stopPolling() {
+    if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+
 function startCrawl() {
     var btn = document.getElementById('btn-crawl');
     var btnStop = document.getElementById('btn-stop');
@@ -327,6 +375,7 @@ function startCrawl() {
             if (data.status === 'started') {
                 btn.innerText = '爬取中...';
                 btnStop.style.display = 'inline-block';
+                startPolling();
             } else {
                 btn.disabled = false;
                 btn.innerText = '▶ 开始爬取';
@@ -353,6 +402,7 @@ function stopCrawl() {
             btnStop.style.display = 'none';
             btn.disabled = false;
             btn.innerText = '▶ 开始爬取';
+            stopPolling();
         });
 }
 
@@ -360,6 +410,7 @@ function stopCrawl() {
 document.getElementById('btn-crawl').disabled = true;
 document.getElementById('btn-crawl').innerText = '爬取中...';
 document.getElementById('btn-stop').style.display = 'inline-block';
+startPolling();
 {% endif %}
 </script>
 {% endblock %}

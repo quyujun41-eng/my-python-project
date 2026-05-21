@@ -219,6 +219,8 @@ def run_crawl(app, stop_event=None, target_year=None):
                                     existing.update_time = now
                                     if not existing.fans:
                                         existing.fans = _fetch_fans(sess, mid, fans_cache)
+                                    if existing.tag in KEYWORDS and real_tag not in KEYWORDS:
+                                        existing.tag = real_tag
                                     total_update += 1
                                 else:
                                     fans_count = _fetch_fans(sess, mid, fans_cache)

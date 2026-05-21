@@ -446,6 +446,23 @@ def crawl_clear_year(year):
     return jsonify({'status': 'ok', 'message': f'已删除 {deleted} 条{yr}年数据', 'year': yr})
 
 
+@app.route('/crawl/status', methods=['GET'])
+def crawl_status():
+    running = models.CrawlLog.query.filter_by(status='running').first()
+    total = models.HuiZong.query.count()
+    year_stats = _get_year_stats()
+    data = {
+        'is_running': running is not None,
+        'total': total,
+        'year_stats': year_stats,
+    }
+    if running:
+        data['crawl_new'] = running.new_count or 0
+        data['crawl_update'] = running.update_count or 0
+        data['crawl_year'] = running.target_year
+    return jsonify(data)
+
+
 @app.route('/crawl/stop', methods=['POST'])
 def crawl_stop():
     if not session.get('uuid'):
