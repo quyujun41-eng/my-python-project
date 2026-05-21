@@ -320,8 +320,10 @@ def dianzan():
 @app.route('/crawl', methods=['GET'])
 def crawl():
     uuid = session.get('uuid')
-    if not models.User.query.get(uuid):
+    user = models.User.query.get(uuid)
+    if not user:
         return redirect(url_for('login'))
+    is_admin = (user.name == 'admin' or user.id == 1)
 
     import datetime as _dt
     from models import CrawlLog
@@ -401,7 +403,7 @@ def crawl():
         total=total,
         last_log=last_log,
         logs=logs,
-        is_admin=True,
+        is_admin=is_admin,
         year_stats=year_stats,
         current_year=current_year,
         crawl_year_options=crawl_year_options,
