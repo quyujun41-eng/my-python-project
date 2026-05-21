@@ -3,6 +3,7 @@
 启动入口：python run.py 或 gunicorn run:app
 """
 import atexit
+import threading
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -12,6 +13,8 @@ import models
 import main    # noqa: F401  注册所有路由
 import admin   # noqa: F401  注册后台管理视图
 from crawler import run_crawl, migrate_db
+
+CRAWL_YEARS = [2023, 2024, 2025]
 
 
 def _cleanup_stale_crawls():
@@ -27,12 +30,24 @@ def _cleanup_stale_crawls():
             db.session.commit()
 
 
+def _run_all_years():
+    """同时爬取多个年份，每个年份一个线程"""
+    threads = [
+        threading.Thread(target=run_crawl, args=(app,), kwargs={'target_year': y}, daemon=True)
+        for y in CRAWL_YEARS
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+
 migrate_db(app)
 _cleanup_stale_crawls()
 
 scheduler = BackgroundScheduler(daemon=True)
 scheduler.add_job(
-    func=lambda: run_crawl(app),
+    func=_run_all_years,
     trigger='cron',
     hour=Config.AUTO_CRAWL_HOUR,
     minute=5,
