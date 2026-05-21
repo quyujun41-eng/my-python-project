@@ -313,6 +313,43 @@ function selectDelYear(year, btn) {
     document.getElementById('del-hint').style.display = 'none';
 }
 
+function refreshStats() {
+    return fetch('/crawl/status')
+        .then(r => r.json())
+        .then(function(data) {
+            var yearMap = {};
+            (data.year_stats || []).forEach(function(ys) { yearMap[ys.year] = ys.count; });
+
+            // 更新总量
+            var totalEl = document.getElementById('total-count');
+            if (totalEl) totalEl.innerText = data.total;
+
+            // 更新年份数据卡片
+            document.querySelectorAll('#stat-cards [data-year]').forEach(function(card) {
+                var yr = card.getAttribute('data-year');
+                if (yearMap[yr] !== undefined) {
+                    card.querySelector('.year-count').innerText = yearMap[yr];
+                } else {
+                    card.remove();
+                }
+            });
+
+            // 更新删除区年份按钮的条数
+            document.querySelectorAll('#del-year-btns button').forEach(function(btn) {
+                var m = (btn.getAttribute('onclick') || '').match(/selectDelYear\('(\d+)'/);
+                if (!m) return;
+                var yr = m[1];
+                if (yearMap[yr] !== undefined) {
+                    btn.innerText = yr + '年（' + yearMap[yr] + '条）';
+                } else {
+                    btn.remove();
+                }
+            });
+
+            return data;
+        });
+}
+
 function confirmDeleteYear() {
     if (!selectedDelYear) return;
     if (!confirm('确定要删除全部 ' + selectedDelYear + ' 年数据吗？删除后不可恢复！')) return;
@@ -320,7 +357,16 @@ function confirmDeleteYear() {
         .then(r => r.json())
         .then(data => {
             layer.msg(data.message || data.error, { time: 2000, icon: data.status === 'ok' ? 1 : 2 });
-            if (data.status === 'ok') setTimeout(() => location.reload(), 1500);
+            if (data.status === 'ok') {
+                refreshStats();
+                selectedDelYear = null;
+                document.getElementById('btn-delete-confirm').style.display = 'none';
+                document.getElementById('del-hint').style.display = '';
+                document.getElementById('del-hint').innerText = '点击上方年份按钮选择';
+                document.querySelectorAll('#del-year-btns button').forEach(function(b) {
+                    b.style.background = '#fff'; b.style.color = '#f5a623';
+                });
+            }
         });
 }
 
@@ -330,7 +376,10 @@ function rollback(logId, el) {
         .then(r => r.json())
         .then(data => {
             layer.msg(data.message || data.error, { time: 2000 });
-            if (data.status === 'ok') setTimeout(() => location.reload(), 1500);
+            if (data.status === 'ok') {
+                refreshStats();
+                el.outerHTML = '<span style="color:#ddd;font-size:13px;">-</span>';
+            }
         });
 }
 
