@@ -235,66 +235,6 @@ def analysis():
     return render_template('analysis.html', keyword=keyword, stats=stats)
 
 
-@app.route('/compare', methods=['GET'])
-def compare():
-    uuid = session.get('uuid')
-    if not models.User.query.get(uuid):
-        return redirect(url_for('login'))
-
-    year_stats = _get_year_stats()
-    available_years = [int(y['year']) for y in year_stats]
-
-    year_a = request.args.get('year_a', type=int)
-    year_b = request.args.get('year_b', type=int)
-
-    result = {}
-    if year_a and year_b and year_a != year_b and year_a in available_years and year_b in available_years:
-        def _year_summary(year):
-            rows = models.db.session.query(
-                models.HuiZong.tag,
-                func.count(models.HuiZong.id).label('cnt'),
-                func.avg(models.HuiZong.rank_score).label('avg_play'),
-                func.avg(models.HuiZong.like).label('avg_like'),
-                func.avg(models.HuiZong.fans).label('avg_fans'),
-            ).filter(
-                models.HuiZong.data_year == year,
-                models.HuiZong.tag != None,
-            ).group_by(models.HuiZong.tag).all()
-
-            total = models.HuiZong.query.filter(models.HuiZong.data_year == year).count()
-            partition_data = {r.tag: {'cnt': r.cnt, 'avg_play': round(r.avg_play or 0),
-                                      'avg_like': round(r.avg_like or 0)} for r in rows}
-            overall_play = round(sum(r.avg_play or 0 for r in rows) / len(rows)) if rows else 0
-            overall_like = round(sum(r.avg_like or 0 for r in rows) / len(rows)) if rows else 0
-            overall_fans = round(sum(r.avg_fans or 0 for r in rows) / len(rows)) if rows else 0
-            return {'total': total, 'avg_play': overall_play, 'avg_like': overall_like,
-                    'avg_fans': overall_fans, 'partitions': partition_data}
-
-        da = _year_summary(year_a)
-        db_ = _year_summary(year_b)
-
-        all_tags = sorted(
-            set(da['partitions'].keys()) | set(db_['partitions'].keys()),
-            key=lambda t: (da['partitions'].get(t, {}).get('avg_play', 0) +
-                           db_['partitions'].get(t, {}).get('avg_play', 0)),
-            reverse=True
-        )[:15]
-
-        result = {
-            'year_a': year_a, 'year_b': year_b,
-            'summary_a': da, 'summary_b': db_,
-            'tags': json.dumps(all_tags, ensure_ascii=False),
-            'plays_a': json.dumps([da['partitions'].get(t, {}).get('avg_play', 0) for t in all_tags]),
-            'plays_b': json.dumps([db_['partitions'].get(t, {}).get('avg_play', 0) for t in all_tags]),
-            'likes_a': json.dumps([da['partitions'].get(t, {}).get('avg_like', 0) for t in all_tags]),
-            'likes_b': json.dumps([db_['partitions'].get(t, {}).get('avg_like', 0) for t in all_tags]),
-        }
-
-    return render_template('compare.html',
-        available_years=available_years,
-        year_a=year_a, year_b=year_b,
-        result=result)
-
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -386,7 +326,7 @@ def crawl():
     import datetime as _dt
     from models import CrawlLog
     current_year = _dt.datetime.now().year
-    crawl_year_options = list(range(2023, current_year + 1))
+    crawl_year_options = list(range(2023, current_year + 1))  # 含2023
 
     year_stats = _get_year_stats()
     total = sum(y['count'] for y in year_stats)
@@ -394,11 +334,16 @@ def crawl():
     last_log = CrawlLog.query.order_by(CrawlLog.start_time.desc()).first()
     logs = CrawlLog.query.order_by(CrawlLog.start_time.desc()).limit(10).all()
 
-    # 动态对比：取有数据的最旧年 vs 最新年
+    avail_years = [int(y['year']) for y in year_stats]
+    cmp_a = request.args.get('cmp_a', type=int)
+    cmp_b = request.args.get('cmp_b', type=int)
+
     compare = None
-    if len(year_stats) >= 2:
-        year_old = int(year_stats[0]['year'])
-        year_new = int(year_stats[-1]['year'])
+    if len(avail_years) >= 2:
+        if cmp_a and cmp_b and cmp_a != cmp_b and cmp_a in avail_years and cmp_b in avail_years:
+            year_old, year_new = sorted([cmp_a, cmp_b])
+        else:
+            year_old, year_new = avail_years[0], avail_years[-1]
 
         tags_old_play = dict(models.db.session.query(
             models.HuiZong.tag, func.avg(models.HuiZong.rank_score)
@@ -437,6 +382,9 @@ def crawl():
         compare = {
             'year_old': year_old,
             'year_new': year_new,
+            'avail_years': avail_years,
+            'cmp_a': cmp_a or year_old,
+            'cmp_b': cmp_b or year_new,
             'avg_play_old': avg_play_old,
             'avg_play_new': avg_play_new,
             'avg_like_old': avg_like_old,
