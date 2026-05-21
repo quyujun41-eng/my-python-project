@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-启动入口：python run.py
+启动入口：python run.py 或 gunicorn run:app
 """
 import atexit
 
@@ -27,19 +27,20 @@ def _cleanup_stale_crawls():
             db.session.commit()
 
 
+migrate_db(app)
+_cleanup_stale_crawls()
+
+scheduler = BackgroundScheduler(daemon=True)
+scheduler.add_job(
+    func=lambda: run_crawl(app),
+    trigger='cron',
+    hour=Config.AUTO_CRAWL_HOUR,
+    minute=0,
+    id='daily_crawl',
+)
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
+
+
 if __name__ == '__main__':
-    migrate_db(app)
-    _cleanup_stale_crawls()
-
-    scheduler = BackgroundScheduler(daemon=True)
-    scheduler.add_job(
-        func=lambda: run_crawl(app),
-        trigger='cron',
-        hour=Config.AUTO_CRAWL_HOUR,
-        minute=0,
-        id='daily_crawl',
-    )
-    scheduler.start()
-    atexit.register(lambda: scheduler.shutdown())
-
     app.run(debug=False, use_reloader=False)
