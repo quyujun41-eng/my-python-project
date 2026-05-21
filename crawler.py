@@ -15,7 +15,7 @@ MIXIN_KEY_ENC_TAB = [
     22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52
 ]
 
-KEYWORDS = Config.CRAWL_KEYWORDS
+KEYWORDS = list(Config.CRAWL_PARTITIONS.keys())
 BILIBILI_COOKIE = Config.BILIBILI_COOKIE
 
 HEADERS = {
@@ -179,7 +179,7 @@ def run_crawl(app, stop_event=None, target_year=None):
                     app.logger.info('[crawler] 收到停止信号，提前终止')
                     break
                 app.logger.info(f'[crawler] 关键词: {keyword} 年份: {data_year}')
-                for page in range(1, 51):
+                for page in range(1, Config.CRAWL_MAX_PAGES + 1):
                     if stop_event and stop_event.is_set():
                         break
                     try:
