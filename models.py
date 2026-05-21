@@ -26,7 +26,7 @@ class User(db.Model):
     email = db.Column(db.String(32),name='邮箱')
     password = db.Column(db.String(32),name='密码')
 
-    recommend = db.relationship("Recommend", backref="user")
+    recommend = db.relationship("Recommend", backref="user", cascade="all, delete-orphan")
     user_datetime = db.Column(db.DateTime, nullable=True, default=datetime.datetime.now)
 
     def __repr__(self):
@@ -83,8 +83,8 @@ class UserBehavior(db.Model):
     behavior_type = db.Column(db.String(16), name='行为类型', nullable=False)  # view / like / collect
     behavior_time = db.Column(db.DateTime, default=datetime.datetime.now, name='行为时间')
 
-    user = db.relationship('User', backref='behaviors')
-    huizong = db.relationship('HuiZong', backref='behaviors')
+    user = db.relationship('User', backref=db.backref('behaviors', cascade='all, delete-orphan'))
+    huizong = db.relationship('HuiZong', backref=db.backref('behaviors', cascade='all, delete-orphan'))
 
     def __repr__(self):
         return "<用户{} {}了视频{}>".format(self.user_id, self.behavior_type, self.huizong_id)
@@ -100,7 +100,7 @@ class SearchHistory(db.Model):
     result_count = db.Column(db.Integer, name='结果数量', default=0)
     search_time = db.Column(db.DateTime, default=datetime.datetime.now, name='搜索时间')
 
-    user = db.relationship('User', backref='search_histories')
+    user = db.relationship('User', backref=db.backref('search_histories', cascade='all, delete-orphan'))
 
     def __repr__(self):
         return "<用户{}搜索了:{}>".format(self.user_id, self.keyword)
@@ -116,8 +116,8 @@ class Comment(db.Model):
     content = db.Column(db.String(500), name='评论内容', nullable=False)
     create_time = db.Column(db.DateTime, default=datetime.datetime.now, name='评论时间')
 
-    user = db.relationship('User', backref='comments')
-    huizong = db.relationship('HuiZong', backref='comments')
+    user = db.relationship('User', backref=db.backref('comments', cascade='all, delete-orphan'))
+    huizong = db.relationship('HuiZong', backref=db.backref('comments', cascade='all, delete-orphan'))
 
     def __repr__(self):
         return "<用户{}评论了视频{}>".format(self.user_id, self.huizong_id)
