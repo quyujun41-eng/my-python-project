@@ -6,7 +6,6 @@ from flask_sqlalchemy import SQLAlchemy
 import datetime
 from sqlalchemy import or_, and_
 from flask_babel import Babel
-from flask_mail import Mail
 
 from config import Config
 
@@ -16,7 +15,6 @@ babel = Babel(app)
 
 # 创建数据库sqlalchemy工具对象
 db = SQLAlchemy(app)
-mail = Mail(app)
 
 
 class User(db.Model):

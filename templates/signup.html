@@ -5,8 +5,6 @@
 <title>注册</title>
 <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
 <script src="/static/javascript/jquery.js"></script>
-<script src="/static/javascript/public.js"></script>
-<script src="/static/javascript/plug-ins/customScrollbar.min.js"></script>
 </head>
 <body class="login-page">
 	<section class="login-contain">
@@ -25,25 +23,22 @@
 				<li>
 					<div class="form-group">
 						<label class="control-label">邮箱：</label>
-						<div style="display:flex;gap:8px;align-items:center;">
-							<input type="email" name="email" id="emailInput" placeholder="邮箱..." class="form-control form-underlined" style="flex:1;"/>
-							<button type="button" id="sendCodeBtn"
-								style="white-space:nowrap;padding:6px 12px;background:#4a90e2;color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;">
-								发送验证码
-							</button>
-						</div>
-					</div>
-				</li>
-				<li>
-					<div class="form-group">
-						<label class="control-label">验证码：</label>
-						<input type="text" name="code" placeholder="6位验证码..." class="form-control form-underlined" maxlength="6"/>
+						<input type="email" name="email" placeholder="邮箱..." class="form-control form-underlined"/>
 					</div>
 				</li>
 				<li>
 					<div class="form-group">
 						<label class="control-label">密码：</label>
 						<input type="password" name="pwd" placeholder="密码（至少6位）..." class="form-control form-underlined"/>
+					</div>
+				</li>
+				<li>
+					<div class="form-group">
+						<label class="control-label">验证码：</label>
+						<div style="display:flex;gap:8px;align-items:center;">
+							<input type="text" name="code" placeholder="请输入右侧验证码..." class="form-control form-underlined" maxlength="4" style="flex:1;"/>
+							<img id="captchaImg" src="/captcha.png" style="height:38px;border-radius:4px;cursor:pointer;" title="点击刷新"/>
+						</div>
 					</div>
 				</li>
 				{% if error %}
@@ -63,38 +58,8 @@
 	</section>
 <div class="mask"></div>
 <script>
-var countdown = 0;
-document.getElementById('sendCodeBtn').addEventListener('click', function() {
-    var email = document.getElementById('emailInput').value.trim();
-    if (!email) { alert('请先填写邮箱'); return; }
-    if (countdown > 0) return;
-    var btn = this;
-    btn.disabled = true;
-    btn.style.background = '#aaa';
-    $.ajax({
-        url: '/send_code',
-        type: 'POST',
-        data: { email: email },
-        success: function(res) {
-            if (res.ok) {
-                countdown = 60;
-                var timer = setInterval(function() {
-                    countdown--;
-                    btn.textContent = countdown + 's后重发';
-                    if (countdown <= 0) {
-                        clearInterval(timer);
-                        btn.disabled = false;
-                        btn.style.background = '#4a90e2';
-                        btn.textContent = '发送验证码';
-                    }
-                }, 1000);
-            } else {
-                alert(res.msg);
-                btn.disabled = false;
-                btn.style.background = '#4a90e2';
-            }
-        }
-    });
+document.getElementById('captchaImg').addEventListener('click', function() {
+    this.src = '/captcha.png?' + Date.now();
 });
 </script>
 </body>

@@ -1,23 +1,23 @@
 # !/usr/bin/env python
 # _*_ coding: utf-8 _*_
 import hashlib
+import io
 import json
 import os
 import random
+import string
 import threading
-import time
 
-from flask import Flask, request, render_template, jsonify, session, redirect, url_for
-from flask_mail import Message
+from flask import Flask, request, render_template, jsonify, session, redirect, url_for, make_response
 from sqlalchemy import or_, and_, func
+from captcha.image import ImageCaptcha
 
 import models
 import xietong
-from models import app, mail, SearchHistory, UserBehavior, Comment
+from models import app, SearchHistory, UserBehavior, Comment
 from sqlalchemy import desc
 
-# 内存存储验证码：{email: (code, expire_timestamp)}
-_verify_codes = {}
+_captcha_gen = ImageCaptcha(width=160, height=60)
 
 
 _crawl_stop_event = threading.Event()
@@ -300,21 +300,15 @@ def loginout():
         return redirect(url_for('login'))
 
 
-@app.route('/send_code', methods=['POST'])
-def send_code():
-    email = request.form.get('email', '').strip()
-    if not email or '@' not in email:
-        return jsonify({'ok': False, 'msg': '邮箱格式不正确'})
-    code = str(random.randint(100000, 999999))
-    _verify_codes[email] = (code, time.time() + 300)  # 5分钟有效
-    try:
-        msg = Message('B站数据分析系统 - 注册验证码',
-                      recipients=[email],
-                      body=f'您的注册验证码为：{code}\n验证码5分钟内有效，请勿泄露。')
-        mail.send(msg)
-        return jsonify({'ok': True, 'msg': '验证码已发送'})
-    except Exception as e:
-        return jsonify({'ok': False, 'msg': f'发送失败，请检查邮件配置：{e}'})
+@app.route('/captcha.png')
+def captcha_image():
+    code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    session['captcha'] = code.upper()
+    data = _captcha_gen.generate(code)
+    resp = make_response(data.read())
+    resp.headers['Content-Type'] = 'image/png'
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -327,7 +321,7 @@ def signup():
     name = request.form.get('name', '').strip()
     email = request.form.get('email', '').strip()
     pwd = request.form.get('pwd', '')
-    code = request.form.get('code', '').strip()
+    code = request.form.get('code', '').strip().upper()
     if not name or not pwd or not email or not code:
         return render_template('signup.html', error='所有字段不能为空')
     if len(name) < 2 or len(name) > 32:
@@ -336,12 +330,8 @@ def signup():
         return render_template('signup.html', error='密码长度不能少于6位')
     if models.User.query.filter(models.User.name == name).first():
         return render_template('signup.html', error='账号名已被注册')
-    stored = _verify_codes.get(email)
-    if not stored or stored[1] < time.time():
-        return render_template('signup.html', error='验证码已过期，请重新发送')
-    if stored[0] != code:
+    if code != session.get('captcha', ''):
         return render_template('signup.html', error='验证码错误')
-    _verify_codes.pop(email, None)
     models.db.session.add(models.User(name=name, email=email, password=hash_pwd(pwd)))
     models.db.session.commit()
     return redirect(url_for('login'))
