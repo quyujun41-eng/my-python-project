@@ -56,6 +56,12 @@
         </button>
         {% endfor %}
     </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <label style="font-size:13px;color:#555;">最多爬取条数：</label>
+        <input id="input-max-records" type="number" min="100" max="20000" value="5000"
+               style="width:100px;padding:6px 10px;border:1px solid #d0d0d0;border-radius:4px;font-size:14px;">
+        <span style="font-size:12px;color:#aaa;">（均匀分布到38个分区，建议 3000~8000）</span>
+    </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <button id="btn-crawl" onclick="startCrawl()"
                 style="padding:10px 28px;font-size:15px;font-weight:bold;
@@ -72,7 +78,7 @@
         <span id="crawl-msg" style="color:#4a90e2;font-size:14px;"></span>
     </div>
     <p style="color:#aaa;font-size:12px;margin-top:10px;margin-bottom:0;">
-        覆盖B站38个主要分区，每分区最多20页（约400条），按所选年份过滤发布时间，预计耗时20~30分钟。每天凌晨3:30自动爬取。
+        覆盖B站38个主要分区，按所选年份过滤发布时间，每分区均匀分配配额，预计耗时视条数而定。每天凌晨3:30自动爬取。
     </p>
 </div>
 
@@ -381,10 +387,11 @@ function startCrawl() {
     var msg = document.getElementById('crawl-msg');
     btn.disabled = true;
     btn.innerText = '启动中...';
+    var maxRec = parseInt(document.getElementById('input-max-records').value) || 5000;
     fetch('/crawl/run', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({year: selectedCrawlYear})
+        body: JSON.stringify({year: selectedCrawlYear, max_records: maxRec})
     })
         .then(r => r.json())
         .then(data => {

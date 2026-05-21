@@ -595,14 +595,23 @@ def crawl_run():
         target_year = int(body.get('year', 0)) or None
     except (ValueError, TypeError):
         target_year = None
+    try:
+        max_records = int(body.get('max_records', 0)) or 5000
+        max_records = max(100, min(max_records, 20000))
+    except (ValueError, TypeError):
+        max_records = 5000
+
+    from crawler import KEYWORDS as _KEYWORDS
+    max_per_keyword = max(1, max_records // len(_KEYWORDS))
 
     def _run():
         from crawler import run_crawl
-        run_crawl(app, stop_event=_crawl_stop_event, target_year=target_year)
+        run_crawl(app, stop_event=_crawl_stop_event, target_year=target_year,
+                  max_records=max_records, max_per_keyword=max_per_keyword)
 
     threading.Thread(target=_run, daemon=True).start()
     year_label = f'{target_year}年' if target_year else '最新'
-    return jsonify({'status': 'started', 'message': f'爬虫已启动！正在爬取{year_label}数据，预计需要30~60分钟'})
+    return jsonify({'status': 'started', 'message': f'爬虫已启动！正在均匀爬取{year_label}数据（上限{max_records}条），预计需要20~40分钟'})
 
 
 @app.route('/comments/<int:huizong_id>', methods=['GET'])
