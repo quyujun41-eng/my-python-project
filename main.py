@@ -373,14 +373,90 @@ def crawl():
 
     import datetime as _dt
     from models import CrawlLog
-    current_year = _dt.datetime.now().year
-    crawl_year_options = list(range(2023, current_year + 1))  # 含2023
+    from sqlalchemy import extract
+    now = _dt.datetime.now()
+    current_year = now.year
+    current_month = now.month
+    crawl_year_options = list(range(2023, current_year + 1))
 
     year_stats = _get_year_stats()
     total = sum(y['count'] for y in year_stats)
 
     last_log = CrawlLog.query.order_by(CrawlLog.start_time.desc()).first()
     logs = CrawlLog.query.order_by(CrawlLog.start_time.desc()).limit(10).all()
+
+    # 年份对比：用户可选两个年份，查询均限定 1月~当前月
+    avail_years = [int(y['year']) for y in year_stats]
+    cmp_a = request.args.get('cmp_a', type=int)
+    cmp_b = request.args.get('cmp_b', type=int)
+
+    compare = None
+    if len(avail_years) >= 2:
+        if cmp_a and cmp_b and cmp_a != cmp_b and cmp_a in avail_years and cmp_b in avail_years:
+            year_old, year_new = sorted([cmp_a, cmp_b])
+        else:
+            year_old, year_new = avail_years[0], avail_years[-1]
+
+        def year_month_query(year):
+            return models.HuiZong.query.filter(
+                models.HuiZong.data_year == year,
+                models.HuiZong.pubdate != None,
+                extract('month', models.HuiZong.pubdate) <= current_month,
+            )
+
+        def avg_by_tag(year):
+            rows = models.db.session.query(
+                models.HuiZong.tag, func.avg(models.HuiZong.rank_score)
+            ).filter(
+                models.HuiZong.data_year == year,
+                models.HuiZong.tag != None,
+                models.HuiZong.pubdate != None,
+                extract('month', models.HuiZong.pubdate) <= current_month,
+            ).group_by(models.HuiZong.tag).all()
+            return dict(rows)
+
+        tags_old = avg_by_tag(year_old)
+        tags_new = avg_by_tag(year_new)
+        all_tags = sorted(set(list(tags_old.keys()) + list(tags_new.keys())))[:15]
+
+        def avg_field(year, field):
+            return round(models.db.session.query(func.avg(field)).filter(
+                models.HuiZong.data_year == year,
+                models.HuiZong.pubdate != None,
+                extract('month', models.HuiZong.pubdate) <= current_month,
+            ).scalar() or 0)
+
+        avg_play_old = avg_field(year_old, models.HuiZong.rank_score)
+        avg_play_new = avg_field(year_new, models.HuiZong.rank_score)
+        avg_like_old = avg_field(year_old, models.HuiZong.like)
+        avg_like_new = avg_field(year_new, models.HuiZong.like)
+
+        def pct(old, new):
+            return round((new - old) / old * 100) if old else 0
+
+        growth_tags = sorted([
+            {'tag': t, 'growth': pct(tags_old.get(t, 0), tags_new.get(t, 0))}
+            for t in set(tags_old) & set(tags_new) if tags_old.get(t, 0) > 0
+        ], key=lambda x: x['growth'], reverse=True)[:5]
+
+        compare = {
+            'year_old': year_old,
+            'year_new': year_new,
+            'avail_years': avail_years,
+            'cmp_a': cmp_a or year_old,
+            'cmp_b': cmp_b or year_new,
+            'current_month': current_month,
+            'avg_play_old': avg_play_old,
+            'avg_play_new': avg_play_new,
+            'avg_like_old': avg_like_old,
+            'avg_like_new': avg_like_new,
+            'play_pct': pct(avg_play_old, avg_play_new),
+            'like_pct': pct(avg_like_old, avg_like_new),
+            'chart_tags': json.dumps(all_tags, ensure_ascii=False),
+            'chart_old': json.dumps([round(tags_old.get(t, 0) or 0) for t in all_tags]),
+            'chart_new': json.dumps([round(tags_new.get(t, 0) or 0) for t in all_tags]),
+            'growth_tags': growth_tags,
+        }
 
     return render_template('crawl.html',
         total=total,
@@ -389,7 +465,9 @@ def crawl():
         is_admin=is_admin,
         year_stats=year_stats,
         current_year=current_year,
+        current_month=current_month,
         crawl_year_options=crawl_year_options,
+        compare=compare,
     )
 
 
