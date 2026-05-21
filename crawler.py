@@ -153,12 +153,13 @@ def migrate_db(app):
                 pass
 
 
-def run_crawl(app, stop_event=None, target_year=None, max_records=None, end_month=None):
+def run_crawl(app, stop_event=None, target_year=None, max_records=None, end_month=None, max_per_keyword=None):
     """Main crawl entry point.
     stop_event: threading.Event to signal early stop.
     target_year: int, if set, only fetch videos published in that year.
-    max_records: int, if set, stop after adding this many new records.
+    max_records: int, if set, stop after adding this many new records total.
     end_month: int, if set, only fetch videos up to this month (for same-period comparison).
+    max_per_keyword: int, if set, stop each partition after adding this many new records.
     """
     with app.app_context():
         from models import db, HuiZong, CrawlLog
@@ -189,11 +190,14 @@ def run_crawl(app, stop_event=None, target_year=None, max_records=None, end_mont
                 if max_records and total_new >= max_records:
                     app.logger.info(f'[crawler] 已达到新增上限 {max_records} 条，停止')
                     break
+                keyword_new = 0
                 app.logger.info(f'[crawler] 关键词: {keyword} 年份: {data_year}')
                 for page in range(1, Config.CRAWL_MAX_PAGES + 1):
                     if stop_event and stop_event.is_set():
                         break
                     if max_records and total_new >= max_records:
+                        break
+                    if max_per_keyword and keyword_new >= max_per_keyword:
                         break
                     try:
                         result = _search_page(sess, keyword, page, img_key, sub_key,
@@ -258,6 +262,7 @@ def run_crawl(app, stop_event=None, target_year=None, max_records=None, end_mont
                                         data_year=data_year,
                                     ))
                                     total_new += 1
+                                    keyword_new += 1
                                 db.session.commit()
                             except Exception as e:
                                 db.session.rollback()

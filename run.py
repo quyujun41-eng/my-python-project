@@ -13,7 +13,7 @@ from models import app, db
 import models
 import main    # noqa: F401  注册所有路由
 import admin   # noqa: F401  注册后台管理视图
-from crawler import run_crawl, migrate_db
+from crawler import run_crawl, migrate_db, KEYWORDS
 
 # 各年份每次爬取新增上限
 CRAWL_PLAN = [
@@ -44,9 +44,11 @@ def _run_all_years():
 
     def kwargs_for(plan):
         year = plan['target_year']
-        # 历史年份只爬 1月~当前月，保证与当年同期对比
         em = current_month if year < current_year else None
-        return {'target_year': year, 'max_records': plan['max_records'], 'end_month': em}
+        max_rec = plan['max_records']
+        # 每分区上限 = 总量 / 分区数，保证各分区数据均匀
+        per_kw = max(1, max_rec // len(KEYWORDS))
+        return {'target_year': year, 'max_records': max_rec, 'end_month': em, 'max_per_keyword': per_kw}
 
     threads = [
         threading.Thread(target=run_crawl, args=(app,), kwargs=kwargs_for(plan), daemon=True)
