@@ -33,7 +33,7 @@
 				</li>
 				<li>
 					<label class="check-box">
-						<input type="checkbox" name="remember"/>
+						<input type="checkbox" id="rememberMe" name="remember"/>
 						<span>记住账号密码</span>
 					</label>
 				</li>
@@ -54,5 +54,27 @@
 		</div>
 	</section>
 <div class="mask"></div>
+<script>
+(function() {
+    var saved = localStorage.getItem('loginInfo');
+    if (saved) {
+        var info = JSON.parse(saved);
+        document.getElementById('adminName').value = info.name || '';
+        document.getElementById('adminPwd').value = info.pwd || '';
+        document.getElementById('rememberMe').checked = true;
+    }
+})();
+
+document.querySelector('.login-form').addEventListener('submit', function() {
+    if (document.getElementById('rememberMe').checked) {
+        localStorage.setItem('loginInfo', JSON.stringify({
+            name: document.getElementById('adminName').value,
+            pwd: document.getElementById('adminPwd').value
+        }));
+    } else {
+        localStorage.removeItem('loginInfo');
+    }
+});
+</script>
 </body>
 </html>
