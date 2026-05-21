@@ -15,6 +15,14 @@ class Config:
     SQLALCHEMY_COMMIT_ON_TEARDOWN = False
     BABEL_DEFAULT_LOCALE = 'zh_CN'
 
+    # ----- 邮件配置（注册验证码） -----
+    MAIL_SERVER = 'smtp.qq.com'
+    MAIL_PORT = 465
+    MAIL_USE_SSL = True
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME', '')   # 填你的QQ邮箱
+    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD', '')   # QQ邮箱授权码（不是登录密码）
+    MAIL_DEFAULT_SENDER = os.getenv('MAIL_USERNAME', '')
+
     # ----- B站登录凭据 -----
     # 生产环境通过环境变量注入，本地开发用默认值
     BILIBILI_COOKIE = {

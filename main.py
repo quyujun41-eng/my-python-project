@@ -3,15 +3,21 @@
 import hashlib
 import json
 import os
+import random
 import threading
+import time
 
 from flask import Flask, request, render_template, jsonify, session, redirect, url_for
+from flask_mail import Message
 from sqlalchemy import or_, and_, func
 
 import models
 import xietong
-from models import app, SearchHistory, UserBehavior, Comment
+from models import app, mail, SearchHistory, UserBehavior, Comment
 from sqlalchemy import desc
+
+# 内存存储验证码：{email: (code, expire_timestamp)}
+_verify_codes = {}
 
 
 _crawl_stop_event = threading.Event()
@@ -294,30 +300,51 @@ def loginout():
         return redirect(url_for('login'))
 
 
+@app.route('/send_code', methods=['POST'])
+def send_code():
+    email = request.form.get('email', '').strip()
+    if not email or '@' not in email:
+        return jsonify({'ok': False, 'msg': '邮箱格式不正确'})
+    code = str(random.randint(100000, 999999))
+    _verify_codes[email] = (code, time.time() + 300)  # 5分钟有效
+    try:
+        msg = Message('B站数据分析系统 - 注册验证码',
+                      recipients=[email],
+                      body=f'您的注册验证码为：{code}\n验证码5分钟内有效，请勿泄露。')
+        mail.send(msg)
+        return jsonify({'ok': True, 'msg': '验证码已发送'})
+    except Exception as e:
+        return jsonify({'ok': False, 'msg': f'发送失败，请检查邮件配置：{e}'})
+
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'GET':
         uuid = session.get('uuid')
-        datas = models.User.query.get(uuid)
-        if datas:
+        if models.User.query.get(uuid):
             return redirect(url_for('index'))
         return render_template('signup.html')
-    elif request.method == 'POST':
-        name = request.form.get('name')
-        email = request.form.get('email')
-        pwd = request.form.get('pwd')
-        if not name or not pwd or not email:
-            return render_template('signup.html', error='输入不能为空')
-        elif len(name) < 2 or len(name) > 32:
-            return render_template('signup.html', error='账号长度须在2-32位之间')
-        elif len(pwd) < 6:
-            return render_template('signup.html', error='密码长度不能少于6位')
-        elif models.User.query.filter(models.User.name == name).first():
-            return render_template('signup.html', error='账号名已被注册')
-        else:
-            models.db.session.add(models.User(name=name, email=email, password=hash_pwd(pwd)))
-            models.db.session.commit()
-            return redirect(url_for('login'))
+    name = request.form.get('name', '').strip()
+    email = request.form.get('email', '').strip()
+    pwd = request.form.get('pwd', '')
+    code = request.form.get('code', '').strip()
+    if not name or not pwd or not email or not code:
+        return render_template('signup.html', error='所有字段不能为空')
+    if len(name) < 2 or len(name) > 32:
+        return render_template('signup.html', error='账号长度须在2-32位之间')
+    if len(pwd) < 6:
+        return render_template('signup.html', error='密码长度不能少于6位')
+    if models.User.query.filter(models.User.name == name).first():
+        return render_template('signup.html', error='账号名已被注册')
+    stored = _verify_codes.get(email)
+    if not stored or stored[1] < time.time():
+        return render_template('signup.html', error='验证码已过期，请重新发送')
+    if stored[0] != code:
+        return render_template('signup.html', error='验证码错误')
+    _verify_codes.pop(email, None)
+    models.db.session.add(models.User(name=name, email=email, password=hash_pwd(pwd)))
+    models.db.session.commit()
+    return redirect(url_for('login'))
 
 
 
