@@ -66,5 +66,5 @@ class Config:
         '健康':    163,
         '公益':    165,
     }
-    CRAWL_MAX_PAGES = 50
+    CRAWL_MAX_PAGES = 10
     AUTO_CRAWL_HOUR = 3
