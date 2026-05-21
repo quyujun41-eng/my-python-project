@@ -49,7 +49,7 @@ def _fetch_fans(sess, mid, cache):
         )
         fans = resp.json().get('data', {}).get('follower', 0) or 0
         cache[mid] = fans
-        time.sleep(0.1)
+        time.sleep(0.05)
         return fans
     except Exception:
         cache[mid] = 0
@@ -256,15 +256,15 @@ def run_crawl(app, stop_event=None, target_year=None):
                                 db.session.rollback()
                                 app.logger.error(f'[crawler] 保存单条记录失败 {bvid}: {e}')
 
-                        time.sleep(0.8)
+                        time.sleep(0.3)
 
                     except Exception as e:
                         app.logger.error(f'[crawler] {keyword} p{page}: {e}')
                         db.session.rollback()
-                        time.sleep(2)
+                        time.sleep(1)
                         continue
 
-                time.sleep(1.5)
+                time.sleep(0.5)
 
             if stop_event and stop_event.is_set():
                 log.status = 'stopped'
