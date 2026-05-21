@@ -37,12 +37,16 @@
 						<input type="password" name="pwd" placeholder="密码..." class="form-control form-underlined" id="adminPwd"/>
 					</div>
 				</li>
+					{% if error %}
+				<li>
+					<p style="color:#e85d5d;text-align:center;font-size:14px;">{{ error }}</p>
+				</li>
+				{% endif %}
 				<li>
 					<button class="btn btn-lg btn-block" id="entry" type="submit">立即注册</button>
 				</li>
 				<li>
-					<p class="btm-info"><a href="/login" target="_blank" title="DeathGhost">去登录</a></p>
-
+					<p class="btm-info"><a href="/login">去登录</a></p>
 				</li>
 			</ul>
 			</form>

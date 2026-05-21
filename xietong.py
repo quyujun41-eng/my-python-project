@@ -25,7 +25,7 @@ def similarity(data):
             N[i]+=1;
             C.setdefault(i,{});
             for j,scores in item.items():
-                if j not in i:
+                if j != i:
                     C[i].setdefault(j,0);
                     C[i][j]+=1;
 

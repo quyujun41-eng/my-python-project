@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% block title %}数据更新{% endblock %}
+
+{% block content %}
+<section class="page-hd">
+    <header>
+        <h2 class="title"><i class="icon-refresh"></i>B站数据自动爬取</h2>
+    </header>
+    <hr>
+</section>
+
+<!-- 数据量统计卡片 -->
+<div style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap;">
+    {% for yr in year_stats %}
+    <div style="flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;">
+        <div style="font-size:26px;font-weight:bold;color:{{ '#4a90e2' if yr.is_latest else '#888' }};">{{ yr.count }}</div>
+        <div style="color:#aaa;margin-top:6px;font-size:13px;">{{ yr.year }}年{{ '最新' if yr.is_latest else '历史' }}数据</div>
+    </div>
+    {% endfor %}
+    <div style="flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;">
+        <div style="font-size:26px;font-weight:bold;color:#e85d5d;">{{ total }}</div>
+        <div style="color:#aaa;margin-top:6px;font-size:13px;">数据总量</div>
+    </div>
+    <div style="flex:1;min-width:140px;background:#fff;border-radius:8px;padding:20px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;">
+        {% if last_log %}
+        {% set status_color = {'success':'#7ed321','running':'#f5a623','stopped':'#888','rolled_back':'#aaa','error':'#e85d5d'} %}
+        {% set status_label = {'success':'已完成','running':'进行中','stopped':'手动停止','rolled_back':'已撤销','error':'异常失败'} %}
+        <div style="font-size:16px;font-weight:bold;
+            color:{{ status_color.get(last_log.status, '#e85d5d') }};">
+            {{ status_label.get(last_log.status, last_log.status) }}
+        </div>
+        <div style="color:#aaa;margin-top:6px;font-size:12px;">
+            {{ last_log.start_time.strftime('%m-%d %H:%M') if last_log.start_time else '-' }}
+        </div>
+        {% else %}
+        <div style="font-size:15px;color:#aaa;">未爬取</div>
+        <div style="color:#aaa;margin-top:6px;font-size:12px;">上次状态</div>
+        {% endif %}
+    </div>
+</div>
+
+{% if is_admin %}
+<!-- 爬取操作区 -->
+<div style="background:#fff;border-radius:8px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin:20px 0;">
+    <div style="font-size:14px;color:#555;margin-bottom:12px;font-weight:bold;">选择爬取年份</div>
+    <div id="crawl-year-btns" style="margin-bottom:16px;">
+        {% for yr in crawl_year_options %}
+        <button onclick="selectCrawlYear({{ yr }}, this)"
+                style="margin:3px;padding:7px 22px;border-radius:20px;font-size:14px;font-weight:bold;cursor:pointer;transition:all .15s;
+                       {% if yr == current_year %}background:#4a90e2;color:#fff;border:2px solid #4a90e2;{% else %}background:#fff;color:#4a90e2;border:2px solid #4a90e2;{% endif %}">
+            {{ yr }}年
+        </button>
+        {% endfor %}
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button id="btn-crawl" onclick="startCrawl()"
+                style="padding:10px 28px;font-size:15px;font-weight:bold;
+                       background:#4a90e2;color:#fff;border:none;border-radius:6px;
+                       cursor:pointer;box-shadow:0 2px 6px rgba(74,144,226,0.4);">
+            ▶ 开始爬取
+        </button>
+        <button id="btn-stop" onclick="stopCrawl()" style="display:none;
+                padding:10px 28px;font-size:15px;font-weight:bold;
+                background:#e85d5d;color:#fff;border:none;border-radius:6px;
+                cursor:pointer;box-shadow:0 2px 6px rgba(232,93,93,0.4);">
+            ■ 停止爬取
+        </button>
+        <span id="crawl-msg" style="color:#4a90e2;font-size:14px;"></span>
+    </div>
+    <p style="color:#aaa;font-size:12px;margin-top:10px;margin-bottom:0;">
+        覆盖20个热门关键词，每关键词最多50页，按所选年份过滤发布时间，预计耗时30~60分钟。每天凌晨3点自动爬取最新年份数据。
+    </p>
+</div>
+
+<!-- 删除数据区 -->
+{% if year_stats %}
+<div style="background:#fff8f0;border-radius:8px;padding:20px;border:1px solid #f5e6cc;margin:20px 0;">
+    <div style="font-size:14px;color:#555;margin-bottom:12px;font-weight:bold;">🗑 删除指定年份数据</div>
+    <div id="del-year-btns" style="margin-bottom:14px;">
+        {% for yr in year_stats %}
+        <button onclick="selectDelYear('{{ yr.year }}', this)"
+                style="margin:3px;padding:7px 18px;border-radius:20px;font-size:13px;cursor:pointer;font-weight:bold;transition:all .15s;
+                       background:#fff;color:#f5a623;border:2px solid #f5a623;">
+            {{ yr.year }}年（{{ yr.count }}条）
+        </button>
+        {% endfor %}
+    </div>
+    <div>
+        <button id="btn-delete-confirm" onclick="confirmDeleteYear()" style="display:none;
+                padding:8px 24px;background:#e85d5d;color:#fff;border:none;border-radius:6px;
+                font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 2px 6px rgba(232,93,93,0.3);">
+            确认删除所选年份
+        </button>
+        <span id="del-hint" style="color:#bbb;font-size:13px;margin-left:4px;">点击上方年份按钮选择</span>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- 年度对比（有两个不同年份数据才显示） -->
+{% if compare %}
+<hr style="margin:30px 0 20px;">
+<h3 style="font-size:16px;color:#333;margin-bottom:16px;">
+    <i class="fa fa-line-chart"></i> {{ compare.year_old }}年 vs {{ compare.year_new }}年 数据对比分析
+</h3>
+
+<!-- 核心指标对比卡片 -->
+<div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;background:#fff;border-radius:8px;padding:20px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <div style="color:#888;font-size:13px;margin-bottom:8px;">平均播放量</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div>
+                <div style="font-size:13px;color:#aaa;">{{ compare.year_old }}年</div>
+                <div style="font-size:20px;font-weight:bold;color:#888;">{{ "{:,}".format(compare.avg_play_old) }}</div>
+            </div>
+            <div style="font-size:20px;color:#ccc;">→</div>
+            <div>
+                <div style="font-size:13px;color:#aaa;">{{ compare.year_new }}年</div>
+                <div style="font-size:20px;font-weight:bold;color:#4a90e2;">{{ "{:,}".format(compare.avg_play_new) }}</div>
+            </div>
+            {% if compare.play_pct != 0 %}
+            <div style="margin-left:auto;font-size:18px;font-weight:bold;
+                color:{{ '#e85d5d' if compare.play_pct > 0 else '#7ed321' }};">
+                {{ '+' if compare.play_pct > 0 else '' }}{{ compare.play_pct }}%
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div style="flex:1;min-width:200px;background:#fff;border-radius:8px;padding:20px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <div style="color:#888;font-size:13px;margin-bottom:8px;">平均点赞数</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div>
+                <div style="font-size:13px;color:#aaa;">{{ compare.year_old }}年</div>
+                <div style="font-size:20px;font-weight:bold;color:#888;">{{ "{:,}".format(compare.avg_like_old) }}</div>
+            </div>
+            <div style="font-size:20px;color:#ccc;">→</div>
+            <div>
+                <div style="font-size:13px;color:#aaa;">{{ compare.year_new }}年</div>
+                <div style="font-size:20px;font-weight:bold;color:#4a90e2;">{{ "{:,}".format(compare.avg_like_new) }}</div>
+            </div>
+            {% if compare.like_pct != 0 %}
+            <div style="margin-left:auto;font-size:18px;font-weight:bold;
+                color:{{ '#e85d5d' if compare.like_pct > 0 else '#7ed321' }};">
+                {{ '+' if compare.like_pct > 0 else '' }}{{ compare.like_pct }}%
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div style="display:flex;gap:16px;flex-wrap:wrap;">
+    <!-- 分区平均播放量对比柱状图 -->
+    <div style="flex:2;min-width:300px;">
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fa fa-bar-chart"></i> 各分区平均播放量对比（{{ compare.year_old }} vs {{ compare.year_new }}）
+            </div>
+            <div class="card-body" id="chart_compare" style="height:360px;"></div>
+        </div>
+    </div>
+
+    <!-- 增长最快分区 -->
+    {% if compare.growth_tags %}
+    <div style="flex:1;min-width:200px;">
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fa fa-rocket"></i> 播放量增长最快分区 Top5
+            </div>
+            <div class="card-body">
+                {% for item in compare.growth_tags %}
+                <div style="display:flex;justify-content:space-between;align-items:center;
+                            padding:10px 0;border-bottom:1px solid #f5f5f5;">
+                    <span style="font-size:14px;">{{ loop.index }}. {{ item.tag }}</span>
+                    <span style="font-weight:bold;font-size:15px;
+                        color:{{ '#e85d5d' if item.growth > 0 else '#7ed321' }};">
+                        {{ '+' if item.growth > 0 else '' }}{{ item.growth }}%
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div style="text-align:center;padding:40px;color:#bbb;font-size:14px;
+            background:#f9f9f9;border-radius:8px;margin-top:20px;">
+    <i class="fa fa-info-circle" style="font-size:24px;display:block;margin-bottom:10px;"></i>
+    爬取两个不同年份的数据后，这里将自动展示年度对比分析图表
+</div>
+{% endif %}
+
+<!-- 爬取历史 -->
+<div class="card mb-3" style="margin-top:24px;">
+    <div class="card-header"><i class="fa fa-history"></i> 爬取历史记录</div>
+    <div class="card-body" style="padding:0;">
+        {% if logs %}
+        <table class="table table-bordered mb-0">
+            <thead>
+                <tr class="cen">
+                    <th>开始时间</th><th>结束时间</th><th>爬取年份</th><th>状态</th><th>新增</th><th>更新</th><th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr class="cen">
+                    <td>{{ log.start_time.strftime('%Y-%m-%d %H:%M:%S') if log.start_time else '-' }}</td>
+                    <td>{{ log.end_time.strftime('%Y-%m-%d %H:%M:%S') if log.end_time else '运行中...' }}</td>
+                    <td style="font-weight:bold;color:#4a90e2;">{{ log.target_year or '-' }}年</td>
+                    <td>
+                        {% set sc = {'success':'#7ed321','running':'#f5a623','stopped':'#888','rolled_back':'#aaa','error':'#e85d5d'} %}
+                        {% set sl = {'success':'已完成','running':'进行中','stopped':'手动停止','rolled_back':'已撤销','error':'异常失败'} %}
+                        <span style="color:{{ sc.get(log.status, '#e85d5d') }};">
+                            {{ sl.get(log.status, log.status) }}
+                        </span>
+                    </td>
+                    <td style="color:#4a90e2;">+{{ log.new_count or 0 }}</td>
+                    <td style="color:#888;">{{ log.update_count or 0 }}</td>
+                    <td>
+                        {% if log.status in ['success', 'stopped', 'error'] and (log.new_count or 0) > 0 %}
+                        <a href="#" style="color:#e85d5d;font-size:13px;"
+                           onclick="rollback({{ log.id }}, this); return false;">撤销本次</a>
+                        {% else %}
+                        <span style="color:#ddd;font-size:13px;">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align:center;padding:30px;color:#aaa;">暂无爬取记录，点击上方按钮开始第一次爬取</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+{% if compare %}
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script>
+var chartTags = {{ compare.chart_tags | safe }};
+var dataOld   = {{ compare.chart_old | safe }};
+var dataNew   = {{ compare.chart_new | safe }};
+var labelOld  = '{{ compare.year_old }}年';
+var labelNew  = '{{ compare.year_new }}年';
+
+var chart = echarts.init(document.getElementById('chart_compare'));
+chart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { data: [labelOld, labelNew], top: 5 },
+    grid: { left: '3%', right: '4%', bottom: '20%', containLabel: true },
+    xAxis: [{ type: 'category', data: chartTags, axisLabel: { rotate: 30 } }],
+    yAxis: [{ type: 'value', name: '平均播放量' }],
+    series: [
+        { name: labelOld, type: 'bar', data: dataOld,
+          itemStyle: { color: '#bbb' }, label: { show: false } },
+        { name: labelNew, type: 'bar', data: dataNew,
+          itemStyle: { color: '#4a90e2' }, label: { show: false } }
+    ]
+});
+</script>
+{% endif %}
+
+<script>
+var selectedCrawlYear = {{ current_year }};
+var selectedDelYear = null;
+
+function selectCrawlYear(year, btn) {
+    selectedCrawlYear = year;
+    document.querySelectorAll('#crawl-year-btns button').forEach(function(b) {
+        b.style.background = '#fff'; b.style.color = '#4a90e2';
+    });
+    btn.style.background = '#4a90e2'; btn.style.color = '#fff';
+}
+
+function selectDelYear(year, btn) {
+    selectedDelYear = year;
+    document.querySelectorAll('#del-year-btns button').forEach(function(b) {
+        b.style.background = '#fff'; b.style.color = '#f5a623';
+    });
+    btn.style.background = '#f5a623'; btn.style.color = '#fff';
+    document.getElementById('btn-delete-confirm').style.display = 'inline-block';
+    document.getElementById('del-hint').style.display = 'none';
+}
+
+function confirmDeleteYear() {
+    if (!selectedDelYear) return;
+    if (!confirm('确定要删除全部 ' + selectedDelYear + ' 年数据吗？删除后不可恢复！')) return;
+    fetch('/crawl/clear_year/' + selectedDelYear, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            layer.msg(data.message || data.error, { time: 2000, icon: data.status === 'ok' ? 1 : 2 });
+            if (data.status === 'ok') setTimeout(() => location.reload(), 1500);
+        });
+}
+
+function rollback(logId, el) {
+    if (!confirm('确定要撤销本次爬取的新增数据吗？此操作不可恢复。')) return;
+    fetch('/crawl/rollback/' + logId, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            layer.msg(data.message || data.error, { time: 2000 });
+            if (data.status === 'ok') setTimeout(() => location.reload(), 1500);
+        });
+}
+
+function startCrawl() {
+    var btn = document.getElementById('btn-crawl');
+    var btnStop = document.getElementById('btn-stop');
+    var msg = document.getElementById('crawl-msg');
+    btn.disabled = true;
+    btn.innerText = '启动中...';
+    fetch('/crawl/run', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({year: selectedCrawlYear})
+    })
+        .then(r => r.json())
+        .then(data => {
+            msg.innerText = data.message;
+            if (data.status === 'started') {
+                btn.innerText = '爬取中...';
+                btnStop.style.display = 'inline-block';
+            } else {
+                btn.disabled = false;
+                btn.innerText = '▶ 开始爬取';
+            }
+        })
+        .catch(() => {
+            msg.innerText = '请求失败，请刷新重试';
+            btn.disabled = false;
+            btn.innerText = '▶ 开始爬取';
+        });
+}
+
+function stopCrawl() {
+    var btn = document.getElementById('btn-crawl');
+    var btnStop = document.getElementById('btn-stop');
+    var msg = document.getElementById('crawl-msg');
+    btnStop.disabled = true;
+    btnStop.innerText = '停止中...';
+    fetch('/crawl/stop', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            msg.innerText = data.message;
+            msg.style.color = '#e85d5d';
+            btnStop.style.display = 'none';
+            btn.disabled = false;
+            btn.innerText = '▶ 开始爬取';
+        });
+}
+
+{% if last_log and last_log.status == 'running' %}
+document.getElementById('btn-crawl').disabled = true;
+document.getElementById('btn-crawl').innerText = '爬取中...';
+document.getElementById('btn-stop').style.display = 'inline-block';
+{% endif %}
+</script>
+{% endblock %}

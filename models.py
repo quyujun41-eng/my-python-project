@@ -15,23 +15,12 @@ babel = Babel(app)
 app.config['BABEL_DEFAULT_LOCALE'] = 'zh_CN'
 
 
-class Config(object):
-    """配置参数"""
-    # 设置连接数据库的URL
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL',
-                                                  'sqlite:///' + os.path.join(app.root_path, 'bilibili.db'))
-
-    # 设置sqlalchemy自动更跟踪数据库
-    SQLALCHEMY_TRACK_MODIFICATIONS = True
-    # 查询时会显示原始SQL语句
-    app.config['SQLALCHEMY_ECHO'] = False
-    # 禁止自动提交数据处理
-    app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = False
-    app.config['SECRET_KEY'] = 'kyes'
-
-
-# 读取配置
-app.config.from_object(Config)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
+    'DATABASE_URL', 'sqlite:///' + os.path.join(app.root_path, 'bilibili.db'))
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ECHO'] = False
+app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'bilibili-analysis-2026-ZxK9mPqR7vNw')
 
 # 创建数据库sqlalchemy工具对象
 db = SQLAlchemy(app)
@@ -73,6 +62,9 @@ class HuiZong(db.Model):
     share = db.Column(db.Float, name='转发')
     coin = db.Column(db.Float, name='投币')
     fans = db.Column(db.Float, name='粉丝数')
+    update_time = db.Column(db.DateTime(), nullable=True)
+    crawl_id = db.Column(db.Integer, nullable=True)
+    data_year = db.Column(db.Integer, nullable=True)
     datetime = db.Column(db.DateTime(), nullable=True, default=datetime.datetime.now)
 
     recommend = db.relationship("Recommend", backref="huizong")
@@ -140,11 +132,19 @@ class Comment(db.Model):
         return "<用户{}评论了视频{}>".format(self.user_id, self.huizong_id)
 
 
+class CrawlLog(db.Model):
+    __tablename__ = 'CrawlLog'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    start_time = db.Column(db.DateTime, name='开始时间')
+    end_time = db.Column(db.DateTime, nullable=True, name='结束时间')
+    status = db.Column(db.String(16), name='状态')
+    new_count = db.Column(db.Integer, default=0, name='新增数量')
+    update_count = db.Column(db.Integer, default=0, name='更新数量')
+    error_msg = db.Column(db.String(500), nullable=True, name='错误信息')
+    target_year = db.Column(db.Integer, nullable=True)
+
+
 if __name__ == '__main__':
-    pass
-    db.drop_all()
-    db.create_all()
-
-
-    db.session.add(User(name='admin',email='admin@qq.com',password='root123456'))
-    db.session.commit()
+    with app.app_context():
+        db.create_all()
+        print("数据库新表创建完成，原有数据不受影响")

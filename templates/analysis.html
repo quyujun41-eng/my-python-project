@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}关键字数据分析{% endblock %}
+
+{% block content %}
+<section class="page-hd">
+    <header>
+        <h2 class="title"><i class="icon-bar-chart"></i>关键字数据统计分析</h2>
+    </header>
+    <hr>
+</section>
+
+<!-- 搜索框 -->
+<div style="margin: 20px 0;">
+    <form method="get" action="/analysis">
+        <div class="input-group" style="max-width:500px;">
+            <input type="text" name="keyword" value="{{ keyword }}"
+                   class="form-control" placeholder="输入关键字，如：美食、游戏、音乐..."
+                   style="font-size:15px;"/>
+            <button class="btn btn-secondary-outline" style="padding:6px 20px;">分析</button>
+        </div>
+    </form>
+</div>
+
+{% if keyword and stats %}
+<!-- 统计摘要卡片 -->
+<div style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap;">
+    <div style="flex:1;min-width:160px;background:#fff;border-radius:8px;padding:20px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;">
+        <div style="font-size:28px;font-weight:bold;color:#e85d5d;">{{ stats.total }}</div>
+        <div style="color:#888;margin-top:6px;">匹配视频数</div>
+    </div>
+    <div style="flex:1;min-width:160px;background:#fff;border-radius:8px;padding:20px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;">
+        <div style="font-size:28px;font-weight:bold;color:#4a90e2;">{{ stats.avg_play }}</div>
+        <div style="color:#888;margin-top:6px;">平均播放量</div>
+    </div>
+    <div style="flex:1;min-width:160px;background:#fff;border-radius:8px;padding:20px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;">
+        <div style="font-size:28px;font-weight:bold;color:#7ed321;">{{ stats.avg_like }}</div>
+        <div style="color:#888;margin-top:6px;">平均点赞数</div>
+    </div>
+    <div style="flex:1;min-width:160px;background:#fff;border-radius:8px;padding:20px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;">
+        <div style="font-size:28px;font-weight:bold;color:#f5a623;">{{ stats.avg_fans }}</div>
+        <div style="color:#888;margin-top:6px;">平均粉丝数</div>
+    </div>
+</div>
+
+<!-- 图表区域 -->
+<div class="row">
+    <div class="col-xs-12 col-md-8">
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fa fa-bar-chart"></i>
+                "{{ keyword }}" 相关视频播放量 Top10
+            </div>
+            <div class="card-body" id="chart_top10" style="height:320px;"></div>
+        </div>
+    </div>
+    <div class="col-xs-12 col-md-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fa fa-pie-chart"></i> 分区分布
+            </div>
+            <div class="card-body" id="chart_tag" style="height:320px;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xs-12 col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fa fa-bar-chart"></i> 点赞量 Top10
+            </div>
+            <div class="card-body" id="chart_like" style="height:280px;"></div>
+        </div>
+    </div>
+    <div class="col-xs-12 col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fa fa-bar-chart"></i> 粉丝数 Top10
+            </div>
+            <div class="card-body" id="chart_fans" style="height:280px;"></div>
+        </div>
+    </div>
+</div>
+
+{% elif keyword %}
+<div style="text-align:center;padding:60px;color:#999;font-size:16px;">
+    未找到包含"{{ keyword }}"的视频数据
+</div>
+{% else %}
+<div style="text-align:center;padding:60px;color:#bbb;font-size:15px;">
+    输入关键字后点击分析，查看该类视频的完整数据统计
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block script %}
+{% if keyword and stats %}
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script>
+var top10Names  = {{ stats.top10_names | safe }};
+var top10Plays  = {{ stats.top10_plays | safe }};
+var top10Likes  = {{ stats.top10_likes | safe }};
+var top10Fans   = {{ stats.top10_fans | safe }};
+var tagValues   = {{ stats.tag_values | safe }};
+
+// 播放量 Top10
+var c1 = echarts.init(document.getElementById('chart_top10'));
+c1.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+    xAxis: { type: 'category', data: top10Names, axisLabel: { rotate: 30 } },
+    yAxis: { type: 'value', name: '播放量' },
+    series: [{ type: 'bar', data: top10Plays, itemStyle: { color: '#e85d5d' },
+               label: { show: true, position: 'top', fontSize: 11 } }]
+});
+
+// 分区饼图
+var c2 = echarts.init(document.getElementById('chart_tag'));
+c2.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c}个 ({d}%)' },
+    legend: { orient: 'vertical', left: 'left', top: 'middle', textStyle: { fontSize: 11 } },
+    series: [{
+        type: 'pie',
+        radius: ['30%', '65%'],
+        center: ['65%', '50%'],
+        data: tagValues,
+        label: { show: false },
+        emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }
+    }]
+});
+
+// 点赞 Top10
+var c3 = echarts.init(document.getElementById('chart_like'));
+c3.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+    xAxis: { type: 'category', data: top10Names, axisLabel: { rotate: 30 } },
+    yAxis: { type: 'value', name: '点赞数' },
+    series: [{ type: 'bar', data: top10Likes, itemStyle: { color: '#4a90e2' } }]
+});
+
+// 粉丝 Top10
+var c4 = echarts.init(document.getElementById('chart_fans'));
+c4.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+    xAxis: { type: 'category', data: top10Names, axisLabel: { rotate: 30 } },
+    yAxis: { type: 'value', name: '粉丝数' },
+    series: [{ type: 'bar', data: top10Fans, itemStyle: { color: '#7ed321' } }]
+});
+</script>
+{% endif %}
+{% endblock %}

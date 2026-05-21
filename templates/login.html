@@ -37,11 +37,16 @@
 						<span>记住账号密码</span>
 					</label>
 				</li>
+				{% if error %}
+				<li>
+					<p style="color:#e85d5d;text-align:center;font-size:14px;">{{ error }}</p>
+				</li>
+				{% endif %}
 				<li>
 					<button class="btn btn-lg btn-block" id="entry" type="submit">立即登录</button>
 				</li>
 				<li>
-					<p class="btm-info"><a href="/signup" target="_blank" title="DeathGhost">去注册</a></p>
+					<p class="btm-info"><a href="/signup">去注册</a></p>
 
 				</li>
 			</ul>

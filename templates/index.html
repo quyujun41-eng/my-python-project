@@ -1,22 +1,36 @@
 {% extends 'base.html' %}
-{% block title %}B站视频数据采集分析可视化系统{% endblock %}       {#	   网页的最上方标题栏     #}
+{% block title %}B站视频数据采集分析可视化系统{% endblock %}
 {% block content %}
 				<section class="page-hd">
 					<header>
-						<h2 class="title"><i class="icon-home"></i>B站视频数据采集分析可视化系统</h2>    {#	   首页的详情页上方标题      #}
+						<h2 class="title"><i class="icon-home"></i>B站视频数据采集分析可视化系统</h2>
 					</header>
 					<hr>
 				</section>
-				
+
 				<div class="clear mt-20">
 					<form method="get" action="/index">
+					<input type="hidden" name="year" value="{{ year }}"/>
 					<div class="fr input-group">
-						<input type="text" name="search" class="form-control" placeholder="搜索视频标题、作者、分区..." style="width:290px;"/>
+						<input type="text" name="search" value="{{ search }}" class="form-control" placeholder="搜索视频标题、作者、分区..." style="width:290px;"/>
 						<button class="btn btn-secondary-outline">搜索</button>
 					</div>
 					</form>
-					{% if search_history %}
 					<div style="margin-top:10px;">
+						<a href="/index" style="display:inline-block;margin:2px 4px;padding:5px 16px;border-radius:16px;font-size:13px;text-decoration:none;font-weight:bold;
+							{{ 'background:#333;color:#fff;border:2px solid #333;' if not year else 'background:#fff;color:#888;border:2px solid #ddd;' }}">
+							全部
+						</a>
+						{% for yr in year_list %}
+						{% set c = '#4a90e2' if yr.is_latest else '#888' %}
+						<a href="/index?year={{ yr.year }}" style="display:inline-block;margin:2px 4px;padding:5px 16px;border-radius:16px;font-size:13px;text-decoration:none;font-weight:bold;
+							{{ ('background:' ~ c ~ ';color:#fff;border:2px solid ' ~ c ~ ';') if year == yr.year else ('background:#fff;color:' ~ c ~ ';border:2px solid ' ~ c ~ ';') }}">
+							{{ '🆕' if yr.is_latest else '📁' }} {{ yr.year }}年{{ '最新' if yr.is_latest else '历史' }}
+						</a>
+						{% endfor %}
+					</div>
+					{% if search_history %}
+					<div style="margin-top:8px;">
 						<span style="color:#888;font-size:13px;">最近搜索：</span>
 						{% for h in search_history %}
 						<a href="/index?search={{ h.keyword }}"
@@ -29,214 +43,142 @@
 					</div>
 					{% endif %}
 				</div>
-				<table class="table table-bordered  mb-15 mt-15" id="divtable">
+
+				<div style="color:#888;font-size:13px;margin:8px 0;">
+					共 {{ pagination.total }} 条记录，第 {{ pagination.page }}/{{ pagination.pages }} 页
+				</div>
+
+				<table class="table table-bordered mb-15 mt-5" id="divtable">
 					<thead>
 						<tr class="cen">
-							  <th>作者</th>
-							  <th>标题</th>
-							  <th>弹幕量</th>
-							  <th>播放量</th>
-							  <th>投稿时间</th>
-							  <th>收藏量</th>
+							<th>作者</th>
+							<th>标题</th>
+							<th>弹幕量</th>
+							<th>播放量</th>
+							<th>投稿时间</th>
+							<th>收藏量</th>
 							<th>点赞</th>
 							<th>分区</th>
 							<th>粉丝数</th>
-                            <th>操作</th>
+							<th>操作</th>
 						</tr>
 					</thead>
-					<tbody id="group_one">
-                              {% for resu in results %}
-                              <tr>
-                                  <td>{{ resu.author }}</td>
-								  <td><a href="{{ resu.url }}">{{ resu.title }}</a></td>
-                                  <td>{{ resu.video_review }}</td>
-                                  <td>{{ resu.rank_score }}</td>
-                                  <td>{{ resu.pubdate }}</td>
-                                  <td>{{ resu.favorites }}</td>
-								   <td>{{ resu.like }}</td>
-								   <td>{{ resu.tag }}</td>
-								   <td>{{ resu.fans }}</td>
-                                  <td><a onclick="spider1('/dianzan?tid={{ resu.id }}')">点赞</a></td>
-                              </tr>
-                              {% endfor %}
+					<tbody>
+						{% for resu in results %}
+						<tr{% if resu.crawl_id %} style="background:#f0f7ff;"{% endif %}>
+							<td>{{ resu.author }}</td>
+							<td>
+								<a href="{{ resu.url }}">{{ resu.title }}</a>
+								{% if resu.crawl_id %}<span style="font-size:11px;background:#4a90e2;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px;">新</span>{% endif %}
+							</td>
+							<td>{{ resu.video_review }}</td>
+							<td>{{ resu.rank_score }}</td>
+							<td>{{ resu.pubdate }}</td>
+							<td>{{ resu.favorites }}</td>
+							<td>{{ resu.like }}</td>
+							<td>{{ resu.tag }}</td>
+							<td>{{ resu.fans }}</td>
+							<td>
+								<a onclick="spider1('/dianzan?tid={{ resu.id }}')">点赞</a>
+								<span style="color:#ddd;margin:0 4px;">|</span>
+								<a onclick="openComment({{ resu.id }}, '{{ resu.title|truncate(15, true, '...') }}')" style="color:#4a90e2;cursor:pointer;">评论</a>
+							</td>
+						</tr>
+						{% endfor %}
 					</tbody>
 				</table>
-				<span id="s"></span>
-							<span id="pageindex1"></span>
-							<a href="#" onclick="page.firstPage();">首页</a>
 
+				<!-- 服务端分页控件 -->
+				<div style="margin:10px 0 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+					{% if pagination.has_prev %}
+					<a href="/index?page=1&search={{ search }}&year={{ year }}"
+					   style="padding:4px 12px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#555;">首页</a>
+					<a href="/index?page={{ pagination.prev_num }}&search={{ search }}&year={{ year }}"
+					   style="padding:4px 12px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#555;">上一页</a>
+					{% else %}
+					<span style="padding:4px 12px;border:1px solid #eee;border-radius:4px;color:#ccc;">首页</span>
+					<span style="padding:4px 12px;border:1px solid #eee;border-radius:4px;color:#ccc;">上一页</span>
+					{% endif %}
 
-							<a href="#" onclick="page.prePage();">上一页</a>
+					<span style="color:#888;font-size:13px;">{{ pagination.page }} / {{ pagination.pages }}</span>
 
-							<a href="#" onclick="page.nextPage();">下一页</a>
+					{% if pagination.has_next %}
+					<a href="/index?page={{ pagination.next_num }}&search={{ search }}&year={{ year }}"
+					   style="padding:4px 12px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#555;">下一页</a>
+					<a href="/index?page={{ pagination.pages }}&search={{ search }}&year={{ year }}"
+					   style="padding:4px 12px;border:1px solid #ddd;border-radius:4px;text-decoration:none;color:#555;">尾页</a>
+					{% else %}
+					<span style="padding:4px 12px;border:1px solid #eee;border-radius:4px;color:#ccc;">下一页</span>
+					<span style="padding:4px 12px;border:1px solid #eee;border-radius:4px;color:#ccc;">尾页</span>
+					{% endif %}
+				</div>
 
-							<a href="#" onclick="page.lastPage();">尾页</a>
-
-							<span id="pageindex"></span>
-
-
-			</div>
-
-
- <script>
-     function spider1(url) {
-        $.ajax({
+<script>
+function spider1(url) {
+    $.ajax({
         url: url,
         type: 'GET',
         success: function (data) {
             var lotest = JSON.parse(data);
-            alert(lotest.content)
+            layer.msg(lotest.content, { time: 1500, icon: 1 });
         }
-    })
-
+    });
 }
-</script>
 
-<script type="text/javascript">
-// JavaScript Document
-/**
-* js分页类
-* @param iAbsolute 每页显示记录数
-* @param sTableId 分页表格属性ID值，为String
-* @param sTBodyId 分页表格TBODY的属性ID值,为String,此项为要分页的主体内容
-* var __variable__; private
-*/
-function Page(iAbsolute, sTableId, sTBodyId,sPageId) {
-    this.absolute = iAbsolute; //每页最大记录数
-    this.tableId = sTableId;
-    this.tBodyId = sTBodyId;
-    this.rowCount = 0; //记录数
-    this.pageCount = 0; //页数
-    this.pageIndex = 0; //页索引
-    this.__oTable__ = null; //表格引用
-    this.__oTBody__ = null; //要分页内容
-    this.__dataRows__ = 0; //记录行引用
-    this.__oldTBody__ = null;
-    this.pageId = sPageId;//显示当前页数的span的ID
+var currentVideoId = null;
 
-    this.__init__(); //初始化;
+function openComment(videoId, title) {
+    currentVideoId = videoId;
+    fetch('/comments/' + videoId)
+        .then(r => r.json())
+        .then(function(comments) {
+            var listHtml = '';
+            if (comments.length === 0) {
+                listHtml = '<p style="color:#bbb;text-align:center;padding:12px 0;font-size:13px;">暂无评论，来发第一条吧</p>';
+            } else {
+                comments.forEach(function(c) {
+                    listHtml += '<div style="padding:8px 0;border-bottom:1px solid #f5f5f5;">' +
+                        '<span style="font-weight:bold;color:#4a90e2;font-size:13px;">' + c.user + '</span>' +
+                        '<span style="color:#bbb;font-size:12px;margin-left:8px;">' + c.time + '</span>' +
+                        '<div style="color:#333;font-size:14px;margin-top:4px;">' + c.content + '</div>' +
+                        '</div>';
+                });
+            }
+            var html = '<div style="padding:16px;">' +
+                '<div style="max-height:240px;overflow-y:auto;margin-bottom:12px;">' + listHtml + '</div>' +
+                '<textarea id="comment-input" placeholder="写下你的评论..." ' +
+                'style="width:100%;height:72px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:14px;resize:none;box-sizing:border-box;"></textarea>' +
+                '<button onclick="submitComment()" ' +
+                'style="margin-top:8px;padding:7px 24px;background:#4a90e2;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer;">发布评论</button>' +
+                '</div>';
+            layer.open({
+                type: 1,
+                title: '评论 · ' + title,
+                area: ['480px', 'auto'],
+                content: html,
+                skin: 'layui-layer-rim'
+            });
+        });
+}
 
-};
-/*
-初始化
-*/
-Page.prototype.__init__ = function () {
-    this.__oTable__ = document.getElementById(this.tableId); //获取table引用
-    this.__oTBody__ = this.__oTable__.tBodies[this.tBodyId]; //获取tBody引用
-    this.__pageInnerDiv__ = document.getElementById(this.pageId);
-    this.__dataRows__ = this.__oTBody__.rows;
-    this.rowCount = this.__dataRows__.length;
-    try {
-        this.absolute = (this.absolute <= 0) || (this.absolute > this.rowCount) ? this.rowCount : this.absolute;
-        this.pageCount = parseInt(this.rowCount % this.absolute == 0
-? this.rowCount / this.absolute : this.rowCount / this.absolute + 1);
-    } catch (exception) { }
-
-    this.__updateTableRows__();
-};
-/*
-下一页
-*/
-Page.prototype.nextPage = function () {
-    if (this.pageIndex + 1 < this.pageCount) {
-        this.pageIndex += 1;
-        this.__updateTableRows__();
-    }
-};
-/*
-上一页
-*/
-Page.prototype.prePage = function () {
-    if (this.pageIndex >= 1) {
-        this.pageIndex -= 1;
-        this.__updateTableRows__();
-    }
-};
-/*
-首页
-*/
-Page.prototype.firstPage = function () {
-    if (this.pageIndex != 0) {
-        this.pageIndex = 0;
-        this.__updateTableRows__();
-    }
-};
-/*
-尾页
-*/
-Page.prototype.lastPage = function () {
-    if (this.pageIndex + 1 != this.pageCount) {
-        this.pageIndex = this.pageCount - 1;
-        this.__updateTableRows__();
-    }
-};
-/*
-页定位方法
-*/
-Page.prototype.aimPage = function (iPageIndex) {
-    if (iPageIndex > this.pageCount - 1) {
-        this.pageIndex = this.pageCount - 1;
-    } else if (iPageIndex < 0) {
-        this.pageIndex = 0;
-    } else {
-        this.pageIndex = iPageIndex;
-    }
-    this.__updateTableRows__();
-};
-/*
-执行分页时，更新显示表格内容
-*/
-Page.prototype.__updateTableRows__ = function () {
-    var iCurrentRowCount = this.absolute * this.pageIndex;
-    var iMoreRow = this.absolute + iCurrentRowCount > this.rowCount ? this.absolute + iCurrentRowCount - this.rowCount : 0;
-    var tempRows = this.__cloneRows__();
-    //alert(tempRows === this.dataRows);
-    //alert(this.dataRows.length);
-    var removedTBody = this.__oTable__.removeChild(this.__oTBody__);
-    var newTBody = document.createElement("TBODY");
-    newTBody.setAttribute("id", this.tBodyId);
-
-    for (var i = iCurrentRowCount; i < this.absolute + iCurrentRowCount - iMoreRow; i++) {
-        newTBody.appendChild(tempRows[i]);
-    }
-    this.__oTable__.appendChild(newTBody);
-    /*
-    this.dataRows为this.oTBody的一个引用，
-    移除this.oTBody那么this.dataRows引用将销失,
-    code:this.dataRows = tempRows;恢复原始操作行集合.
-    */
-    this.__dataRows__ = tempRows;
-    this.__oTBody__ = newTBody;
-    //alert(this.dataRows.length);
-    //alert(this.absolute+iCurrentRowCount);
-    //alert("tempRows:"+tempRows.length);
-    document.getElementById(this.pageId).innerHTML = "当前页：" + (this.pageIndex + 1);
-    document.getElementById('pageindex1').innerHTML = "总页数：" + (this.pageCount);
-};
-/*
-克隆原始操作行集合
-*/
-Page.prototype.__cloneRows__ = function () {
-    var tempRows = [];
-    for (var i = 0; i < this.__dataRows__.length; i++) {
-        /*
-        code:this.dataRows[i].cloneNode(param),
-        param = 1 or true:复制以指定节点发展出去的所有节点,
-        param = 0 or false:只有指定的节点和它的属性被复制.
-        */
-        tempRows[i] = this.__dataRows__[i].cloneNode(1);
-    }
-    return tempRows;
-};
-</script>
-
-<script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
-
-<script type="text/javascript">
-	 $(document).ready(function() {
-		   page = new Page(10, 'divtable', 'group_one', "pageindex");
-	 });
-
+function submitComment() {
+    var content = document.getElementById('comment-input').value.trim();
+    if (!content) { layer.msg('评论内容不能为空', {icon: 2}); return; }
+    fetch('/comment', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({huizong_id: currentVideoId, content: content})
+    })
+    .then(r => r.json())
+    .then(function(data) {
+        if (data.status) {
+            layer.closeAll();
+            layer.msg('评论成功', {time: 1500, icon: 1});
+        } else {
+            layer.msg(data.error || '评论失败', {icon: 2});
+        }
+    });
+}
 </script>
 
 {% endblock %}
