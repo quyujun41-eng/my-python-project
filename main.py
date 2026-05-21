@@ -235,6 +235,65 @@ def analysis():
     return render_template('analysis.html', keyword=keyword, stats=stats)
 
 
+@app.route('/compare', methods=['GET'])
+def compare():
+    uuid = session.get('uuid')
+    if not models.User.query.get(uuid):
+        return redirect(url_for('login'))
+
+    year_stats = _get_year_stats()
+    available_years = [int(y['year']) for y in year_stats]
+
+    year_a = request.args.get('year_a', type=int)
+    year_b = request.args.get('year_b', type=int)
+
+    result = {}
+    if year_a and year_b and year_a != year_b and year_a in available_years and year_b in available_years:
+        def _year_summary(year):
+            rows = models.db.session.query(
+                models.HuiZong.tag,
+                func.count(models.HuiZong.id).label('cnt'),
+                func.avg(models.HuiZong.rank_score).label('avg_play'),
+                func.avg(models.HuiZong.like).label('avg_like'),
+                func.avg(models.HuiZong.fans).label('avg_fans'),
+            ).filter(
+                models.HuiZong.data_year == year,
+                models.HuiZong.tag != None,
+            ).group_by(models.HuiZong.tag).all()
+
+            total = models.HuiZong.query.filter(models.HuiZong.data_year == year).count()
+            partition_data = {r.tag: {'cnt': r.cnt, 'avg_play': round(r.avg_play or 0),
+                                      'avg_like': round(r.avg_like or 0)} for r in rows}
+            overall_play = round(sum(r.avg_play or 0 for r in rows) / len(rows)) if rows else 0
+            overall_like = round(sum(r.avg_like or 0 for r in rows) / len(rows)) if rows else 0
+            overall_fans = round(sum(r.avg_fans or 0 for r in rows) / len(rows)) if rows else 0
+            return {'total': total, 'avg_play': overall_play, 'avg_like': overall_like,
+                    'avg_fans': overall_fans, 'partitions': partition_data}
+
+        da = _year_summary(year_a)
+        db_ = _year_summary(year_b)
+
+        all_tags = sorted(
+            set(da['partitions'].keys()) | set(db_['partitions'].keys()),
+            key=lambda t: (da['partitions'].get(t, {}).get('avg_play', 0) +
+                           db_['partitions'].get(t, {}).get('avg_play', 0)),
+            reverse=True
+        )[:15]
+
+        result = {
+            'year_a': year_a, 'year_b': year_b,
+            'summary_a': da, 'summary_b': db_,
+            'tags': json.dumps(all_tags, ensure_ascii=False),
+            'plays_a': json.dumps([da['partitions'].get(t, {}).get('avg_play', 0) for t in all_tags]),
+            'plays_b': json.dumps([db_['partitions'].get(t, {}).get('avg_play', 0) for t in all_tags]),
+            'likes_a': json.dumps([da['partitions'].get(t, {}).get('avg_like', 0) for t in all_tags]),
+            'likes_b': json.dumps([db_['partitions'].get(t, {}).get('avg_like', 0) for t in all_tags]),
+        }
+
+    return render_template('compare.html',
+        available_years=available_years,
+        year_a=year_a, year_b=year_b,
+        result=result)
 
 
 
