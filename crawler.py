@@ -6,6 +6,8 @@ import datetime
 import urllib.parse
 from functools import reduce
 
+from config import Config
+
 MIXIN_KEY_ENC_TAB = [
     46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35,
     27, 43, 5, 49, 33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13,
@@ -13,18 +15,8 @@ MIXIN_KEY_ENC_TAB = [
     22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52
 ]
 
-KEYWORDS = [
-    '美食', '游戏', '音乐', '科技', '动画', '生活', '搞笑',
-    '知识', '运动', '旅游', '电影', '数码', '时尚', '健康',
-    '教育', '宠物', '汽车', '财经', '历史', '编程'
-]
-
-BILIBILI_COOKIE = {
-    'SESSDATA': '3c86f6eb%2C1794896384%2C7eef6%2A51',
-    'bili_jct': '786321939eb3ad6d516d2b8c975e17f2',
-    'DedeUserID': '389155570',
-    'buvid3': 'E15A163B-91D5-8DB0-1F1B-1C38D1F2D1E841210infoc',
-}
+KEYWORDS = Config.CRAWL_KEYWORDS
+BILIBILI_COOKIE = Config.BILIBILI_COOKIE
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '

@@ -4,23 +4,14 @@
 import flask
 from flask_sqlalchemy import SQLAlchemy
 import datetime
-import os
-from sqlalchemy import or_,and_
+from sqlalchemy import or_, and_
 from flask_babel import Babel
 
-
+from config import Config
 
 app = flask.Flask(__name__)
+app.config.from_object(Config)
 babel = Babel(app)
-app.config['BABEL_DEFAULT_LOCALE'] = 'zh_CN'
-
-
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
-    'DATABASE_URL', 'sqlite:///' + os.path.join(app.root_path, 'bilibili.db'))
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ECHO'] = False
-app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = False
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'bilibili-analysis-2026-ZxK9mPqR7vNw')
 
 # 创建数据库sqlalchemy工具对象
 db = SQLAlchemy(app)

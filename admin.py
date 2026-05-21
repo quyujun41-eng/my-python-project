@@ -100,29 +100,3 @@ class MyCrawlLog(MyModelView):
 
 admin.add_view(MyCrawlLog(CrawlLog, db.session, name='爬取记录管理'))
 
-if __name__ == '__main__':
-    import atexit
-    from apscheduler.schedulers.background import BackgroundScheduler
-    from crawler import run_crawl, migrate_db
-
-    migrate_db(app)
-
-    # 清理上次异常中断留下的running状态，并补齐实际新增数量
-    with app.app_context():
-        stale = CrawlLog.query.filter_by(status='running').all()
-        for s in stale:
-            s.status = 'error'
-            s.error_msg = '服务器重启导致任务中断'
-            # 按crawl_id统计实际已入库的条数（逐条提交的数据不会丢失）
-            actual = models.HuiZong.query.filter_by(crawl_id=s.id).count()
-            if actual > 0:
-                s.new_count = actual
-        if stale:
-            db.session.commit()
-
-    scheduler = BackgroundScheduler(daemon=True)
-    scheduler.add_job(func=lambda: run_crawl(app), trigger='cron', hour=3, minute=0, id='daily_crawl')
-    scheduler.start()
-    atexit.register(lambda: scheduler.shutdown())
-
-    app.run(debug=False, use_reloader=False)
