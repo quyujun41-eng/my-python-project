@@ -49,7 +49,7 @@ def _fetch_fans(sess, mid, cache):
         )
         fans = resp.json().get('data', {}).get('follower', 0) or 0
         cache[mid] = fans
-        time.sleep(0.2)
+        time.sleep(0.1)
         return fans
     except Exception:
         cache[mid] = 0
