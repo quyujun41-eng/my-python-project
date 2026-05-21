@@ -4,3 +4,11 @@ __pycache__/
 *.pyd
 .env
 *.db-journal
+
+# 数据库和日志不提交
+*.db
+runtime_logs/
+
+# 安装包和备份
+*.rar
+*.zip
