@@ -264,6 +264,28 @@ def login():
             return redirect(url_for('index'))
 
 
+@app.route('/change_password', methods=['GET', 'POST'])
+def change_password():
+    if request.method == 'GET':
+        return render_template('change_password.html')
+    name = request.form.get('name', '').strip()
+    old_pwd = request.form.get('old_pwd', '')
+    new_pwd = request.form.get('new_pwd', '')
+    if not name or not old_pwd or not new_pwd:
+        return render_template('change_password.html', error='所有字段不能为空')
+    if len(new_pwd) < 6:
+        return render_template('change_password.html', error='新密码长度不能少于6位')
+    user = models.User.query.filter(
+        models.User.name == name,
+        models.User.password == hash_pwd(old_pwd)
+    ).first()
+    if not user:
+        return render_template('change_password.html', error='账号或原密码错误')
+    user.password = hash_pwd(new_pwd)
+    models.db.session.commit()
+    return render_template('change_password.html', success='密码修改成功，请重新登录')
+
+
 @app.route('/loginout', methods=['GET'])
 def loginout():
     if request.method == 'GET':
