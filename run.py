@@ -3,6 +3,7 @@
 启动入口：python run.py 或 gunicorn run:app
 """
 import atexit
+import datetime
 import threading
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -37,14 +38,18 @@ def _cleanup_stale_crawls():
 
 
 def _run_all_years():
-    """同时爬取多个年份，每个年份一个线程，各自有新增上限"""
+    """同时爬取多个年份，历史年份只爬与当前同期的月份范围"""
+    current_month = datetime.datetime.now().month
+    current_year = datetime.datetime.now().year
+
+    def kwargs_for(plan):
+        year = plan['target_year']
+        # 历史年份只爬 1月~当前月，保证与当年同期对比
+        em = current_month if year < current_year else None
+        return {'target_year': year, 'max_records': plan['max_records'], 'end_month': em}
+
     threads = [
-        threading.Thread(
-            target=run_crawl,
-            args=(app,),
-            kwargs={'target_year': plan['target_year'], 'max_records': plan['max_records']},
-            daemon=True
-        )
+        threading.Thread(target=run_crawl, args=(app,), kwargs=kwargs_for(plan), daemon=True)
         for plan in CRAWL_PLAN
     ]
     for t in threads:

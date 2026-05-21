@@ -63,10 +63,16 @@ def _sign_params(params: dict, img_key: str, sub_key: str) -> dict:
     return params
 
 
-def _year_timestamps(year):
-    """返回指定年份在CST(UTC+8)时区的起止Unix时间戳。"""
+def _year_timestamps(year, end_month=None):
+    """返回指定年份在CST(UTC+8)时区的起止Unix时间戳。
+    end_month: 若指定，则结束时间为该年该月最后一天（用于同期对比）。
+    """
     begin_utc = datetime.datetime(year, 1, 1, 0, 0, 0) - datetime.timedelta(hours=8)
-    end_utc = datetime.datetime(year, 12, 31, 23, 59, 59) - datetime.timedelta(hours=8)
+    if end_month:
+        last_day = calendar.monthrange(year, end_month)[1]
+        end_utc = datetime.datetime(year, end_month, last_day, 23, 59, 59) - datetime.timedelta(hours=8)
+    else:
+        end_utc = datetime.datetime(year, 12, 31, 23, 59, 59) - datetime.timedelta(hours=8)
     return calendar.timegm(begin_utc.timetuple()), calendar.timegm(end_utc.timetuple())
 
 
@@ -147,17 +153,18 @@ def migrate_db(app):
                 pass
 
 
-def run_crawl(app, stop_event=None, target_year=None, max_records=None):
+def run_crawl(app, stop_event=None, target_year=None, max_records=None, end_month=None):
     """Main crawl entry point.
     stop_event: threading.Event to signal early stop.
     target_year: int, if set, only fetch videos published in that year.
     max_records: int, if set, stop after adding this many new records.
+    end_month: int, if set, only fetch videos up to this month (for same-period comparison).
     """
     with app.app_context():
         from models import db, HuiZong, CrawlLog
 
         data_year = target_year or datetime.datetime.now().year
-        pubtime_begin, pubtime_end = _year_timestamps(data_year)
+        pubtime_begin, pubtime_end = _year_timestamps(data_year, end_month=end_month)
 
         log = CrawlLog(start_time=datetime.datetime.now(), status='running', target_year=data_year)
         db.session.add(log)
