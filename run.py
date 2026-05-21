@@ -35,7 +35,7 @@ scheduler.add_job(
     func=lambda: run_crawl(app),
     trigger='cron',
     hour=Config.AUTO_CRAWL_HOUR,
-    minute=0,
+    minute=5,
     id='daily_crawl',
 )
 scheduler.start()
