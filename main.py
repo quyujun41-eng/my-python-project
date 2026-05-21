@@ -382,69 +382,6 @@ def crawl():
     last_log = CrawlLog.query.order_by(CrawlLog.start_time.desc()).first()
     logs = CrawlLog.query.order_by(CrawlLog.start_time.desc()).limit(10).all()
 
-    avail_years = [int(y['year']) for y in year_stats]
-    cmp_a = request.args.get('cmp_a', type=int)
-    cmp_b = request.args.get('cmp_b', type=int)
-
-    compare = None
-    if len(avail_years) >= 2:
-        if cmp_a and cmp_b and cmp_a != cmp_b and cmp_a in avail_years and cmp_b in avail_years:
-            year_old, year_new = sorted([cmp_a, cmp_b])
-        else:
-            year_old, year_new = avail_years[0], avail_years[-1]
-
-        tags_old_play = dict(models.db.session.query(
-            models.HuiZong.tag, func.avg(models.HuiZong.rank_score)
-        ).filter(models.HuiZong.data_year == year_old, models.HuiZong.tag != None
-        ).group_by(models.HuiZong.tag).all())
-
-        tags_new_play = dict(models.db.session.query(
-            models.HuiZong.tag, func.avg(models.HuiZong.rank_score)
-        ).filter(models.HuiZong.data_year == year_new, models.HuiZong.tag != None
-        ).group_by(models.HuiZong.tag).all())
-
-        all_tags = sorted(set(list(tags_old_play.keys()) + list(tags_new_play.keys())))[:15]
-
-        avg_play_old = round(models.db.session.query(func.avg(models.HuiZong.rank_score)
-            ).filter(models.HuiZong.data_year == year_old).scalar() or 0)
-        avg_play_new = round(models.db.session.query(func.avg(models.HuiZong.rank_score)
-            ).filter(models.HuiZong.data_year == year_new).scalar() or 0)
-        avg_like_old = round(models.db.session.query(func.avg(models.HuiZong.like)
-            ).filter(models.HuiZong.data_year == year_old).scalar() or 0)
-        avg_like_new = round(models.db.session.query(func.avg(models.HuiZong.like)
-            ).filter(models.HuiZong.data_year == year_new).scalar() or 0)
-
-        def pct(old, new):
-            if not old:
-                return 0
-            return round((new - old) / old * 100)
-
-        growth_tags = []
-        for t in set(tags_old_play.keys()) & set(tags_new_play.keys()):
-            old_v = tags_old_play.get(t) or 0
-            new_v = tags_new_play.get(t) or 0
-            if old_v > 0:
-                growth_tags.append({'tag': t, 'growth': round((new_v - old_v) / old_v * 100)})
-        growth_tags = sorted(growth_tags, key=lambda x: x['growth'], reverse=True)[:5]
-
-        compare = {
-            'year_old': year_old,
-            'year_new': year_new,
-            'avail_years': avail_years,
-            'cmp_a': cmp_a or year_old,
-            'cmp_b': cmp_b or year_new,
-            'avg_play_old': avg_play_old,
-            'avg_play_new': avg_play_new,
-            'avg_like_old': avg_like_old,
-            'avg_like_new': avg_like_new,
-            'play_pct': pct(avg_play_old, avg_play_new),
-            'like_pct': pct(avg_like_old, avg_like_new),
-            'chart_tags': json.dumps(all_tags, ensure_ascii=False),
-            'chart_old': json.dumps([round(tags_old_play.get(t, 0) or 0) for t in all_tags]),
-            'chart_new': json.dumps([round(tags_new_play.get(t, 0) or 0) for t in all_tags]),
-            'growth_tags': growth_tags,
-        }
-
     return render_template('crawl.html',
         total=total,
         last_log=last_log,
@@ -453,7 +390,6 @@ def crawl():
         year_stats=year_stats,
         current_year=current_year,
         crawl_year_options=crawl_year_options,
-        compare=compare,
     )
 
 
