@@ -13,3 +13,4 @@ runtime_logs/
 # 安装包和备份
 *.rar
 *.zip
+bili-agent/.env
