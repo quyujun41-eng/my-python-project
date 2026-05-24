@@ -2,78 +2,237 @@
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>登录</title>
-
-<link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+<title>登录 · B站数据分析系统</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="/static/javascript/jquery.js"></script>
 <script src="/static/javascript/public.js"></script>
 <script src="/static/javascript/plug-ins/customScrollbar.min.js"></script>
 <script src="/static/javascript/pages/login.js"></script>
-</head>
-<body class="login-page">
-	<section class="login-contain">
-		<header>
-			<h1>B站视频数据采集分析可视化系统</h1>
-{#			<p>Analysis system</p>#}
-		</header>
-		<div class="form-content">
-			<form class="login-form" action="/login" method="post">
-			<ul>
-				<li>
-					<div class="form-group">
-						<label class="control-label">账号：</label>
-						<input type="text" name="name" placeholder="账号..." class="form-control form-underlined" id="adminName"/>
-					</div>
-				</li>
-				<li>
-					<div class="form-group">
-						<label class="control-label">密码：</label>
-						<input type="password" name="pwd" placeholder="密码..." class="form-control form-underlined" id="adminPwd"/>
-					</div>
-				</li>
-				<li>
-					<label class="check-box">
-						<input type="checkbox" id="rememberMe" name="remember"/>
-						<span>记住账号密码</span>
-					</label>
-				</li>
-				{% if error %}
-				<li>
-					<p style="color:#e85d5d;text-align:center;font-size:14px;">{{ error }}</p>
-				</li>
-				{% endif %}
-				<li>
-					<button class="btn btn-lg btn-block" id="entry" type="submit">立即登录</button>
-				</li>
-				<li>
-					<p class="btm-info"><a href="/signup">去注册</a> &nbsp;|&nbsp; <a href="/change_password">修改密码</a></p>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-				</li>
-			</ul>
-			</form>
-		</div>
-	</section>
-<div class="mask"></div>
+body {
+  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f1117;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 背景装饰 */
+body::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(99,102,241,.15) 0%, transparent 70%);
+  top: -100px; left: -100px;
+  pointer-events: none;
+}
+body::after {
+  content: '';
+  position: absolute;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(139,92,246,.1) 0%, transparent 70%);
+  bottom: -100px; right: -100px;
+  pointer-events: none;
+}
+
+/* Grid pattern */
+.grid-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Card */
+.login-card {
+  position: relative; z-index: 10;
+  width: 420px;
+  background: #1a1d2e;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px;
+  padding: 40px 36px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.5);
+}
+
+/* Logo */
+.card-logo {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 28px;
+}
+.logo-box {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.logo-text h1 { font-size: 16px; font-weight: 700; color: #fff; }
+.logo-text p  { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 2px; }
+
+/* Title */
+.card-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.card-sub   { font-size: 13px; color: rgba(255,255,255,.4); margin-bottom: 28px; }
+
+/* Form */
+.field { margin-bottom: 16px; }
+.field label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,.5); margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.field-wrap {
+  position: relative;
+}
+.field-wrap i {
+  position: absolute; left: 13px; top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,.3); font-size: 14px;
+  font-family: 'FontAwesome'; pointer-events: none;
+}
+.field input {
+  width: 100%; padding: 11px 14px 11px 38px;
+  background: rgba(255,255,255,.05);
+  border: 1.5px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  color: #fff; font-size: 14px;
+  outline: none;
+  transition: border .2s, background .2s;
+  font-family: inherit;
+}
+.field input:focus {
+  border-color: #6366f1;
+  background: rgba(99,102,241,.08);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+}
+.field input::placeholder { color: rgba(255,255,255,.25); }
+
+/* Remember */
+.remember-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 20px;
+}
+.remember-row input[type=checkbox] {
+  width: 16px; height: 16px; accent-color: #6366f1; cursor: pointer;
+}
+.remember-row span { font-size: 13px; color: rgba(255,255,255,.5); }
+
+/* Error */
+.error-msg {
+  background: rgba(239,68,68,.1);
+  border: 1px solid rgba(239,68,68,.3);
+  border-radius: 8px; padding: 10px 14px;
+  color: #fca5a5; font-size: 13px;
+  margin-bottom: 16px; text-align: center;
+}
+
+/* Submit */
+.submit-btn {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff; border: none; border-radius: 10px;
+  font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+  font-family: inherit; letter-spacing: .02em;
+}
+.submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(99,102,241,.4);
+}
+.submit-btn:active { transform: translateY(0); }
+
+/* Links */
+.card-links {
+  text-align: center; margin-top: 18px;
+  font-size: 13px; color: rgba(255,255,255,.35);
+}
+.card-links a {
+  color: rgba(165,180,252,.8); text-decoration: none;
+  transition: color .15s;
+}
+.card-links a:hover { color: #a5b4fc; }
+
+/* Font Awesome for icons in inputs */
+@import url('https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');
+</style>
+<link href="/static/assets/font-awesome/css/font-awesome.min.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<div class="login-card">
+  <div class="card-logo">
+    <div class="logo-box">🎬</div>
+    <div class="logo-text">
+      <h1>B站数据分析系统</h1>
+      <p>数据采集 · 分析 · 可视化</p>
+    </div>
+  </div>
+
+  <div class="card-title">欢迎回来</div>
+  <div class="card-sub">登录你的账号以继续</div>
+
+  <form class="login-form" action="/login" method="post">
+    {% if error %}
+    <div class="error-msg">{{ error }}</div>
+    {% endif %}
+
+    <div class="field">
+      <label>账号</label>
+      <div class="field-wrap">
+        <i class="fa fa-user"></i>
+        <input type="text" name="name" id="adminName" placeholder="输入你的账号..." />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>密码</label>
+      <div class="field-wrap">
+        <i class="fa fa-lock"></i>
+        <input type="password" name="pwd" id="adminPwd" placeholder="输入你的密码..." />
+      </div>
+    </div>
+
+    <div class="remember-row">
+      <input type="checkbox" id="rememberMe" name="remember"/>
+      <span>记住账号密码</span>
+    </div>
+
+    <button class="submit-btn" id="entry" type="submit">立即登录</button>
+  </form>
+
+  <div class="card-links">
+    还没有账号？<a href="/signup">立即注册</a>
+    &nbsp;·&nbsp;
+    <a href="/change_password">忘记密码</a>
+  </div>
+</div>
+
 <script>
 (function() {
-    var saved = localStorage.getItem('loginInfo');
-    if (saved) {
-        var info = JSON.parse(saved);
-        document.getElementById('adminName').value = info.name || '';
-        document.getElementById('adminPwd').value = info.pwd || '';
-        document.getElementById('rememberMe').checked = true;
-    }
+  var saved = localStorage.getItem('loginInfo');
+  if (saved) {
+    var info = JSON.parse(saved);
+    document.getElementById('adminName').value = info.name || '';
+    document.getElementById('adminPwd').value  = info.pwd  || '';
+    document.getElementById('rememberMe').checked = true;
+  }
 })();
 
 document.querySelector('.login-form').addEventListener('submit', function() {
-    if (document.getElementById('rememberMe').checked) {
-        localStorage.setItem('loginInfo', JSON.stringify({
-            name: document.getElementById('adminName').value,
-            pwd: document.getElementById('adminPwd').value
-        }));
-    } else {
-        localStorage.removeItem('loginInfo');
-    }
+  if (document.getElementById('rememberMe').checked) {
+    localStorage.setItem('loginInfo', JSON.stringify({
+      name: document.getElementById('adminName').value,
+      pwd:  document.getElementById('adminPwd').value
+    }));
+  } else {
+    localStorage.removeItem('loginInfo');
+  }
 });
 </script>
 </body>

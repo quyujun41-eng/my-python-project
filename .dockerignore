@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+bilibili.db
+bili-agent/

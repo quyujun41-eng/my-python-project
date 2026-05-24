@@ -1,156 +1,249 @@
-{% import 'admin/mylayout.html' as layout with context -%}
-{% import 'admin/static.html' as admin_static with context %}
+﻿{% import "admin/mylayout.html" as layout with context -%}
+{% import "admin/static.html" as admin_static with context %}
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>{% block title %}{% if admin_view.category %}{{ admin_view.category }} - {% endif %}{{ admin_view.name }} - {{ admin_view.admin.name }}{% endblock %}</title>
-    {% block head_meta %}
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="后台管理系统">
-        <meta name="author" content="ouyangm">
-        <link rel="shortcut icon" href="{{ url_for('static', filename = 'favicon.ico') }}" type="image/x-icon">
-        <link rel="icon" href="{{ url_for('static', filename = 'favicon.ico') }}" type="image/x-icon">
-    {% endblock %}
-    {% block head_css %}
-        <link href="{{ admin_static.url(filename='bootstrap/bootstrap3/swatch/{swatch}/bootstrap.min.css'.format(swatch=config.get('FLASK_ADMIN_SWATCH', 'default')), v='3.3.5') }}" rel="stylesheet">
-        {%if config.get('FLASK_ADMIN_SWATCH', 'default') == 'default' %}
-        <link href="{{ admin_static.url(filename='bootstrap/bootstrap3/css/bootstrap-theme.min.css', v='3.3.5') }}" rel="stylesheet">
-        {%endif%}
-        <link href="{{ admin_static.url(filename='admin/css/bootstrap3/admin.css', v='1.1.1') }}" rel="stylesheet">
-          <!-- MetisMenu CSS -->
-      <link href="{{ url_for('static', filename='bower_components/metisMenu/src/metisMenu.css')}}" rel="stylesheet">
-      <!-- Custom CSS -->
-      <link href="{{ url_for('static',
-      filename='dist/css/sb-admin-2.css')}}" rel="stylesheet">
-       <!-- Custom Fonts -->
-      <link href="{{ url_for('static', filename='bower_components/font-awesome/css/font-awesome.css')}}" rel="stylesheet" type="text/css">
-        {% if admin_view.extra_css %}
-          {% for css_url in admin_view.extra_css %}
-            <link href="{{ css_url }}" rel="stylesheet">
-          {% endfor %}
-        {% endif %}
-        <style>
-        body {
-            padding-top: 4px;
-        }
-        </style>
-    {% endblock %}
-    {% block head %}
-    {% endblock %}
-    {% block head_tail %}
-    {% endblock %}
-  </head>
-  <body>
-    <div id="wrapper">
+<head>
+  <title>{% block title %}{% if admin_view.category %}{{ admin_view.category }} - {% endif %}{{ admin_view.name }} - {{ admin_view.admin.name }}{% endblock %}</title>
+  {% block head_meta %}
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% endblock %}
+  {% block head_css %}
+  <link href="{{ admin_static.url(filename='bootstrap/bootstrap3/swatch/default/bootstrap.min.css', v='3.3.5') }}" rel="stylesheet">
+  <link href="{{ admin_static.url(filename='bootstrap/bootstrap3/css/bootstrap-theme.min.css', v='3.3.5') }}" rel="stylesheet">
+  <link href="{{ admin_static.url(filename='admin/css/bootstrap3/admin.css', v='1.1.1') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='bower_components/font-awesome/css/font-awesome.css') }}" rel="stylesheet">
+  {% if admin_view.extra_css %}
+    {% for css_url in admin_view.extra_css %}<link href="{{ css_url }}" rel="stylesheet">{% endfor %}
+  {% endif %}
+  <style>
+  :root {
+    --primary: #6366f1; --pri-dark: #4f46e5;
+    --bg: #f0f2f8; --border: #e5e7eb;
+    --text: #111827; --muted: #6b7280;
+    --sb-w: 220px; --topbar-h: 52px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg) !important;
+    font-family: -apple-system,'PingFang SC','Microsoft YaHei',sans-serif !important;
+    margin: 0; padding: 0;
+  }
 
-        <!-- Navigation -->
-        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
-            <div class="navbar-header">
+  /* 隐藏 Flask-Admin 原始 navbar/sidebar */
+  .navbar-static-top,
+  .navbar-default.sidebar,
+  #wrapper > .navbar { display: none !important; }
 
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="/admin">后台管理系统</a>
-            </div>
-            <!-- /.navbar-header -->
+  #wrapper {
+    display: flex !important;
+    min-height: 100vh;
+  }
+  #page-wrapper {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-width: 0;
+  }
 
-            <ul class="nav navbar-top-links navbar-right">
-                <li class="dropdown">
-                    <!--
-                     <ul class="dropdown-menu dropdown-user">
-                        <li><a href="#"><i class="fa fa-user fa-fw"></i> User Profile</a>
-                        </li>
-                        <li><a href="#"><i class="fa fa-gear fa-fw"></i> Settings</a>
-                        </li>
-                        <li class="divider"></li>
-                        <li><a href="login.html"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
-                        </li>
-                    </ul>
-                    -->
-                     {% block menu_links %}
-                        {{ layout.menu_links() }}
-                     {% endblock %}
-                    <!-- /.dropdown-messages -->
-                </li>
-                <li class="dropdown">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                        <i class="fa fa-user fa-fw"></i> <i class="fa fa-caret-down"></i>
-                    </a>
-                    <ul class="dropdown-menu dropdown-user">
-                        <li class="divider"></li>
-                        <li><a href="/"><i class="fa fa-sign-out fa-fw"></i> 返回主页</a>
-                        </li>
-                    </ul>
-                    <!-- /.dropdown-user -->
-                </li>
-                <!-- /.dropdown -->
-            </ul>
-            <!-- /.navbar-top-links -->
+  /* ── 侧边栏 ── */
+  .admin-sidebar {
+    width: var(--sb-w);
+    min-height: 100vh;
+    background: #111827;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+    box-shadow: 2px 0 12px rgba(0,0,0,.15);
+  }
 
-            <div class="navbar-default sidebar" role="navigation">
-                <div class="sidebar-nav navbar-collapse">
-                    <ul class="nav" id="side-menu">
+  /* Logo */
+  .asb-logo {
+    padding: 18px 16px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+  .asb-logo-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg,#6366f1,#8b5cf6);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 10px;
+  }
+  .asb-logo-title { font-size: 13px; font-weight: 700; color: #fff; }
+  .asb-logo-sub   { font-size: 11px; color: rgba(255,255,255,.3); margin-top: 3px; }
 
-                  {% block main_menu %}
-                   {{ layout.menu() }}
-                   {% endblock %}
+  /* 菜单列表 */
+  .asb-nav { padding: 10px 8px; flex: 1; overflow-y: auto; }
+  .asb-menu-list { list-style: none !important; margin: 0 !important; padding: 0 !important; }
+  .asb-menu-list li { margin: 0 !important; padding: 0 !important; }
 
-                    </ul>
-                </div>
-                <!-- /.sidebar-collapse -->
-            </div>
-            <!-- /.navbar-static-side -->
-        </nav>
+  /* 强制覆盖 Flask-Admin admin.css 的链接样式 */
+  .asb-menu-list li > a,
+  .asb-menu-list li > a:link,
+  .asb-menu-list li > a:visited {
+    display: block !important;
+    padding: 9px 12px !important;
+    margin-bottom: 2px !important;
+    border-radius: 9px !important;
+    font-size: 13px !important;
+    color: rgba(255,255,255,.62) !important;
+    text-decoration: none !important;
+    transition: background .15s, color .15s !important;
+    font-weight: 500 !important;
+    background: transparent !important;
+    line-height: 1.4 !important;
+  }
+  .asb-menu-list li > a:hover {
+    background: rgba(255,255,255,.09) !important;
+    color: #fff !important;
+  }
+  .asb-menu-list li.active > a,
+  .asb-menu-list li.active > a:hover {
+    background: rgba(99,102,241,.25) !important;
+    color: #a5b4fc !important;
+  }
 
+  /* 侧边栏底部 */
+  .asb-footer {
+    padding: 14px 16px;
+    border-top: 1px solid rgba(255,255,255,.07);
+  }
+  .asb-status {
+    font-size: 11px; color: rgba(255,255,255,.35);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .asb-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #34d399; box-shadow: 0 0 5px #34d39960; flex-shrink: 0;
+  }
 
+  /* ── 顶部栏 ── */
+  .admin-topbar {
+    height: var(--topbar-h);
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    position: fixed; top: 0;
+    left: var(--sb-w); right: 0;
+    z-index: 99;
+  }
+  .admin-topbar-title {
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .admin-topbar-right {
+    margin-left: auto; display: flex; align-items: center; gap: 8px;
+  }
+  .atb-back {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+    color: var(--muted) !important;
+    text-decoration: none !important;
+    border: 1px solid var(--border);
+    background: #f9fafb;
+    transition: all .15s;
+  }
+  .atb-back:hover {
+    background: var(--bg) !important;
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
+  }
 
+  /* ── 内容区 ── */
+  .admin-body {
+    margin-left: var(--sb-w);
+    margin-top: var(--topbar-h);
+    padding: 24px 28px;
+    min-height: calc(100vh - var(--topbar-h));
+    background: var(--bg);
+  }
 
+  /* ── 表格 ── */
+  .table { background: #fff !important; font-size: 13px !important; }
+  .table thead th {
+    background: #6366f1 !important; color: #fff !important;
+    border: none !important; padding: 10px 12px !important; font-weight: 600 !important;
+  }
+  .table tbody tr:hover td { background: #ede9fe !important; }
+  .table td { padding: 9px 12px !important; border-color: var(--border) !important; vertical-align: middle !important; }
 
+  /* ── 按钮 ── */
+  .btn-primary { background: var(--primary) !important; border-color: var(--primary) !important; border-radius: 7px !important; }
+  .btn-primary:hover { background: var(--pri-dark) !important; border-color: var(--pri-dark) !important; }
+  .btn-default { border-radius: 7px !important; }
+  .btn-danger  { border-radius: 7px !important; }
 
-        <div id="page-wrapper">
-         <div class="row">
-          {% block access_control %}
-            {% endblock %}
-         {% block messages %}
-           {{ layout.messages() }}
-          {% endblock %}
-          {# store the jinja2 context for form_rules rendering logic #}
-         {% set render_ctx = h.resolve_ctx() %}
-         </div>
-         <div class="row">
-         {% block body %}{% endblock %}
-         </div>
-        </div>
-        <!-- /#page-wrapper -->
+  /* ── Alerts ── */
+  .alert { border-radius: 8px; border: none; }
+  .alert-success { background: #d1fae5 !important; color: #065f46 !important; }
+  .alert-danger  { background: #fee2e2 !important; color: #991b1b !important; }
+  .alert-info    { background: #dbeafe !important; color: #1e40af !important; }
+  </style>
+  {% endblock %}
+  {% block head %}{% endblock %}
+  {% block head_tail %}{% endblock %}
+</head>
+<body>
+<div id="wrapper">
 
+  <!-- 侧边栏 -->
+  <div class="admin-sidebar">
+    <div class="asb-logo">
+      <div class="asb-logo-icon">&#x2699;</div>
+      <div class="asb-logo-title">&#x540E;&#x53F0;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;</div>
+      <div class="asb-logo-sub">B&#x7AD9;&#x6570;&#x636E;&#x5206;&#x6790;</div>
     </div>
+    <nav class="asb-nav">
+      <ul class="asb-menu-list">
+        {% block main_menu %}{{ layout.menu() }}{% endblock %}
+      </ul>
+    </nav>
+    <div class="asb-footer">
+      <div class="asb-status">
+        <span class="asb-dot"></span>
+        &#x7CFB;&#x7EDF;&#x8FD0;&#x884C;&#x4E2D;
+      </div>
+    </div>
+  </div>
 
+  <!-- 主区域 -->
+  <div id="page-wrapper">
+    <div class="admin-topbar">
+      <span class="admin-topbar-title">{{ admin_view.admin.name }}</span>
+      <div class="admin-topbar-right">
+        {% block menu_links %}{{ layout.menu_links() }}{% endblock %}
+        <a href="/index" class="atb-back">
+          <i class="fa fa-home"></i> &#x8FD4;&#x56DE;&#x4E3B;&#x9875;
+        </a>
+      </div>
+    </div>
+    <div class="admin-body">
+      {% block access_control %}{% endblock %}
+      {% block messages %}{{ layout.messages() }}{% endblock %}
+      {% set render_ctx = h.resolve_ctx() %}
+      {% block body %}{% endblock %}
+    </div>
+  </div>
 
+</div>
 
-
-
-   {% block tail_js %}
-    <script src="{{ admin_static.url(filename='vendor/jquery.min.js', v='2.1.4') }}" type="text/javascript"></script>
-    <script src="{{ admin_static.url(filename='bootstrap/bootstrap3/js/bootstrap.min.js', v='3.3.5') }}" type="text/javascript"></script>
-    <script src="{{ admin_static.url(filename='vendor/moment.min.js', v='2.9.0') }}" type="text/javascript"></script>
-    <script src="{{ admin_static.url(filename='vendor/select2/select2.min.js', v='3.5.2') }}" type="text/javascript"></script>
-    <!-- sb-admin-theme  -->
-    <script src="{{ url_for('static', filename='bower_components/metisMenu/src/metisMenu.js') }}"></script>
-   <script src="{{ url_for('static', filename='dist/js/sb-admin-2.js') }}"></script>
-    <!-- Metis Menu Plugin JavaScript -->
-    {% if admin_view.extra_js %}
-      {% for js_url in admin_view.extra_js %}
-        <script src="{{ js_url }}" type="text/javascript"></script>
-      {% endfor %}
-    {% endif %}
-    {% endblock %}
-
-    {% block tail %}
-    {% endblock %}
-  </body>
+{% block tail_js %}
+<script src="{{ admin_static.url(filename='vendor/jquery.min.js', v='2.1.4') }}" type="text/javascript"></script>
+<script src="{{ admin_static.url(filename='bootstrap/bootstrap3/js/bootstrap.min.js', v='3.3.5') }}" type="text/javascript"></script>
+<script src="{{ admin_static.url(filename='vendor/moment.min.js', v='2.9.0') }}" type="text/javascript"></script>
+<script src="{{ admin_static.url(filename='vendor/select2/select2.min.js', v='3.5.2') }}" type="text/javascript"></script>
+{% if admin_view.extra_js %}
+  {% for js_url in admin_view.extra_js %}<script src="{{ js_url }}" type="text/javascript"></script>{% endfor %}
+{% endif %}
+{% endblock %}
+{% block tail %}{% endblock %}
+</body>
 </html>

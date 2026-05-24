@@ -1,308 +1,116 @@
-{% extends 'base.html' %}
-{% block title %}描述性统计{% endblock %}
+﻿{% extends 'base.html' %}
+{% block title %}分析可视化{% endblock %}
 
 {% block content %}
-        <div class="content">
-            
-			<div class="container-fluid">
-					<div class="row">
-							<div class="col-xl-12">
-									<div class="breadcrumb-holder">
-											<h1 class="main-title float-left">视频数据分析可视化   （视频类型分区） </h1>
+<div class="container-fluid">
 
-{#                                        <ol class="breadcrumb float-right">#}
-{#												<li class="breadcrumb-item">Home</li>#}
-{#											</ol>#}
-											<div class="clearfix"></div>
-									</div>
-							</div>
-					</div>
-				<p>
-					{% for resu in types %}
-					&nbsp;&nbsp;&nbsp;<span><a href="/echarts1?type1={{resu}}">{{ resu }}</a></span>
-					{% endfor %}
-				</p>
+  <!-- 页面 Banner -->
+  <div class="page-banner">
+    <div class="page-banner-icon"><i class="fa fa-bar-chart"></i></div>
+    <div>
+      <div class="page-banner-title">视频数据分析可视化</div>
+      <div class="page-banner-sub">视频类型分区 · 播放趋势 · 数据洞察</div>
+    </div>
+  </div>
 
+  <!-- 分区标签 -->
+  <div class="type-filters">
+    <a href="/echarts1" class="type-tag{% if not request.args.get('type1') %} active{% endif %}">全部</a>
+    {% for resu in types %}
+    <a href="/echarts1?type1={{resu}}" class="type-tag{% if request.args.get('type1') == resu %} active{% endif %}">{{ resu }}</a>
+    {% endfor %}
+  </div>
 
-					<div class="row">
-					
-							<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
-								<div class="card mb-3">
-									<div class="card-header">
-										<i class="fa fa-table"></i> 播放量前20视频柱状图
-									</div>
-										
-									<div class="card-body" id="app1" style="height:300px;width:100%">
-									</div>
-								</div><!-- end card-->					
-							</div>
-							
-							<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
-								<div class="card mb-3">
-									<div class="card-header">
-										<i class="fa fa-table"></i> 粉丝数前10的视频类型折线图
-									</div>
-										
-									<div class="card-body" id="app2" style="height:300px;width:100%">
-									</div>
-								</div><!-- end card-->					
-							</div>
-							<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
-								<div class="card mb-3">
-									<div class="card-header">
-										<i class="fa fa-table"></i> 播放量等级与视频时长箱线图
-									</div>
+  <!-- 图表区 -->
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+      <div class="card mb-3">
+        <div class="card-header"><i class="fa fa-bar-chart"></i> 播放量前20视频柱状图</div>
+        <div class="card-body" id="app1" style="height:300px;width:100%"></div>
+      </div>
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+      <div class="card mb-3">
+        <div class="card-header"><i class="fa fa-line-chart"></i> 粉丝数前10的视频类型折线图</div>
+        <div class="card-body" id="app2" style="height:300px;width:100%"></div>
+      </div>
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+      <div class="card mb-3">
+        <div class="card-header"><i class="fa fa-table"></i> 播放量等级与视频时长箱线图</div>
+        <div class="card-body" id="app3" style="height:300px;width:100%"></div>
+      </div>
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+      <div class="card mb-3">
+        <div class="card-header"><i class="fa fa-circle-o"></i> 播放量与粉丝数关系散点图</div>
+        <div class="card-body" id="app4" style="height:300px;width:100%"></div>
+      </div>
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+      <div class="card mb-3">
+        <div class="card-header"><i class="fa fa-search"></i> 用户热门搜索关键词 Top10</div>
+        <div class="card-body" id="app_search" style="height:300px;width:100%"></div>
+      </div>
+    </div>
+  </div>
 
-									<div class="card-body" id="app3" style="height:300px;width:100%">
-									</div>
-								</div><!-- end card-->
-							</div>
-						<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
-								<div class="card mb-3">
-									<div class="card-header">
-										<i class="fa fa-table"></i> 播放量与粉丝数关系散点图
-									</div>
-
-									<div class="card-body" id="app4" style="height:300px;width:100%">
-									</div>
-								</div><!-- end card-->
-							</div>
-
-					<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
-						<div class="card mb-3">
-							<div class="card-header">
-								<i class="fa fa-search"></i> 用户热门搜索关键词 Top10
-							</div>
-							<div class="card-body" id="app_search" style="height:300px;width:100%"></div>
-						</div>
-					</div>
-
-					</div>
-
-            </div>
-			<!-- END container-fluid -->
-
-		</div>
+</div>
 {% endblock %}
 
 {% block script %}
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-
 <script>
-// 播放量与粉丝数散点图
 var domScatter = document.getElementById("app4");
 var scatterChart = echarts.init(domScatter);
 scatterChart.setOption({
-    tooltip: {
-        formatter: function(param) {
-            var v = param.value;
-            return '播放量：' + v[0] + '<br/>粉丝数：' + v[1] + '<br/>标题：' + v[2];
-        }
-    },
-    grid: { left: '3%', right: '4%', bottom: '15%', top: '5%', containLabel: true },
-    xAxis: { name: '播放量', type: 'value' },
-    yAxis: { name: '粉丝数', type: 'value' },
-    series: [{ symbolSize: 8, data: {{ score_time | safe }}, type: 'scatter',
-               itemStyle: { color: '#4a90e2', opacity: 0.7 } }]
+  tooltip: { formatter: function(p){ var v=p.value; return '播放量：'+v[0]+'<br/>粉丝数：'+v[1]+'<br/>标题：'+v[2]; } },
+  grid: { left:'3%', right:'4%', bottom:'15%', top:'5%', containLabel:true },
+  xAxis: { name:'播放量', type:'value' },
+  yAxis: { name:'粉丝数', type:'value' },
+  series: [{ symbolSize:8, data:{{ score_time|safe }}, type:'scatter', itemStyle:{ color:'#6366f1', opacity:0.7 } }]
 });
 </script>
-
 <script>
-var dom = document.getElementById("app_search");
-var myChart = echarts.init(dom);
-var option = {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: [{
-        type: 'category',
-        data: {{ hot_kw_names | safe }},
-        axisTick: { alignWithLabel: true },
-        axisLabel: { rotate: 30 }
-    }],
-    yAxis: [{ type: 'value', name: '搜索次数' }],
-    series: [{
-        name: '搜索次数',
-        type: 'bar',
-        barWidth: '50%',
-        data: {{ hot_kw_counts | safe }},
-        itemStyle: { color: '#e85d5d' }
-    }]
-};
-if (option && typeof option === 'object') { myChart.setOption(option); }
+echarts.init(document.getElementById("app_search")).setOption({
+  tooltip: { trigger:'axis', axisPointer:{ type:'shadow' } },
+  grid: { left:'3%', right:'4%', bottom:'3%', containLabel:true },
+  xAxis: [{ type:'category', data:{{ hot_kw_names|safe }}, axisTick:{ alignWithLabel:true }, axisLabel:{ rotate:30 } }],
+  yAxis: [{ type:'value', name:'搜索次数' }],
+  series: [{ name:'搜索次数', type:'bar', barWidth:'50%', data:{{ hot_kw_counts|safe }}, itemStyle:{ color:'#e85d5d' } }]
+});
 </script>
-
 <script>
-var dom = document.getElementById("app1");
-var myChart = echarts.init(dom);
-var option = {
-    title: {
-        text: '',
-    },
-    tooltip: {
-        trigger: 'axis',
-        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
-            type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
-        }
-    },
-    grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
-        containLabel: true
-    },
-    xAxis: [
-        {
-            type: 'category',
-            data: {{rank_score_name | safe}},
-            axisTick: {
-                alignWithLabel: true
-            }
-        }
-    ],
-    yAxis: [
-        {
-            type: 'value'
-        }
-    ],
-    series: [
-        {
-            name: '数',
-            type: 'bar',
-            barWidth: '60%',
-            data: {{rank_score_count | safe}}
-        }
-    ]
-};
-
-if (option && typeof option === 'object') {
-    myChart.setOption(option);
-}
+echarts.init(document.getElementById("app1")).setOption({
+  tooltip: { trigger:'axis', axisPointer:{ type:'shadow' } },
+  grid: { left:'3%', right:'4%', bottom:'3%', containLabel:true },
+  xAxis: [{ type:'category', data:{{ rank_score_name|safe }}, axisTick:{ alignWithLabel:true } }],
+  yAxis: [{ type:'value' }],
+  series: [{ name:'播放量', type:'bar', barWidth:'60%', data:{{ rank_score_count|safe }}, itemStyle:{ color:'#6366f1' } }]
+});
 </script>
-
 <script>
-var dom = document.getElementById("app2");
-var myChart = echarts.init(dom);
-var option = {
-    title: {
-        text: '',
-    },
-    tooltip: {
-        trigger: 'axis',
-        axisPointer: {            // 坐标轴指示器，坐标轴触发有效
-            type: 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
-        }
-    },
-    grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
-        containLabel: true
-    },
-    xAxis: [
-        {
-            type: 'category',
-            data: {{author_name | safe}},
-            axisTick: {
-                alignWithLabel: true
-            }
-        }
-    ],
-    yAxis: [
-        {
-            type: 'value'
-        }
-    ],
-    series: [
-        {
-            name: '数',
-            type: 'line',
-            barWidth: '60%',
-            data: {{author_count | safe}}
-        }
-    ]
-};
-
-if (option && typeof option === 'object') {
-    myChart.setOption(option);
-}
+echarts.init(document.getElementById("app2")).setOption({
+  tooltip: { trigger:'axis', axisPointer:{ type:'shadow' } },
+  grid: { left:'3%', right:'4%', bottom:'3%', containLabel:true },
+  xAxis: [{ type:'category', data:{{ author_name|safe }}, axisTick:{ alignWithLabel:true } }],
+  yAxis: [{ type:'value' }],
+  series: [{ name:'粉丝数', type:'line', data:{{ author_count|safe }}, itemStyle:{ color:'#8b5cf6' } }]
+});
 </script>
-
 <script>
-var dom = document.getElementById("app3");
-var myChart = echarts.init(dom);
-var option = option = {
-  title: [
-    {
-      text: '',
-    },
-    {
-      text: '',
-      borderColor: '#999',
-      textStyle: {
-        fontWeight: 'normal',
-        fontSize: 14,
-        lineHeight: 20
-      },
-      left: '10%',
-      top: '90%'
-    }
-  ],
+echarts.init(document.getElementById("app3")).setOption({
+  title: [{ text:'' }],
   dataset: [
-    {
-      // prettier-ignore
-      source: {{li1 | safe}},
-    },
-    {
-      transform: {
-        type: 'boxplot',
-        config: { itemNameFormatter: '播放等级 {value}' }
-      }
-    },
-    {
-      fromDatasetIndex: 1,
-      fromTransformResult: 1
-    }
+    { source:{{ li1|safe }} },
+    { transform:{ type:'boxplot', config:{ itemNameFormatter:'播放等级 {value}' } } },
+    { fromDatasetIndex:1, fromTransformResult:1 }
   ],
-  tooltip: {
-    trigger: 'item',
-    axisPointer: {
-      type: 'shadow'
-    }
-  },
-  grid: {
-    left: '10%',
-    right: '10%',
-    bottom: '15%'
-  },
-  xAxis: {
-    type: 'category',
-    boundaryGap: true,
-    nameGap: 30,
-    splitArea: {
-      show: false
-    },
-    splitLine: {
-      show: false
-    }
-  },
-  yAxis: {
-    type: 'value',
-    splitArea: {
-      show: true
-    }
-  },
-  series: [
-    {
-      name: '数',
-      type: 'boxplot',
-      datasetIndex: 1
-    }
-  ]
-};
-
-if (option && typeof option === 'object') {
-    myChart.setOption(option);
-}
+  tooltip: { trigger:'item', axisPointer:{ type:'shadow' } },
+  grid: { left:'10%', right:'10%', bottom:'15%' },
+  xAxis: { type:'category', boundaryGap:true, splitArea:{ show:false }, splitLine:{ show:false } },
+  yAxis: { type:'value', splitArea:{ show:true } },
+  series: [{ name:'时长', type:'boxplot', datasetIndex:1 }]
+});
 </script>
-
 {% endblock %}

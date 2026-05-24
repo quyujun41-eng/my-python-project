@@ -14,3 +14,8 @@ runtime_logs/
 *.rar
 *.zip
 bili-agent/.env
+
+# 日志和备份文件
+app.log
+*.bak
+bili-agent/chroma_db/
