@@ -126,10 +126,12 @@ function spider1(url) {
 }
 
 var currentVideoId = null;
+var currentTitle = null;
 
 function openComment(videoId, title) {
     currentVideoId = videoId;
-    fetch('/comments/' + videoId)
+    currentTitle = title;
+    fetch('/comments/' + videoId, {credentials: 'same-origin'})
         .then(r => r.json())
         .then(function(comments) {
             var listHtml = '';
@@ -174,6 +176,7 @@ function submitComment() {
         if (data.status) {
             layer.closeAll();
             layer.msg('评论成功', {time: 1500, icon: 1});
+            setTimeout(function() { openComment(currentVideoId, currentTitle); }, 800);
         } else {
             layer.msg(data.error || '评论失败', {icon: 2});
         }
